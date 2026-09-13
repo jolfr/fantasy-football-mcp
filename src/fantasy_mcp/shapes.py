@@ -94,24 +94,39 @@ def _round(value: Any) -> float | None:
     return None if value is None else round(float(value), 2)
 
 
-def _stat(player: dict[str, Any], *, period: int, source: int) -> float | None:
-    """appliedTotal of the stats[] item for ``period``/``source``, rounded; None if absent."""
+def _stat(
+    player: dict[str, Any], *, period: int, source: int, season: int | None
+) -> float | None:
+    """appliedTotal of the stats[] item for ``period``/``source`` in ``season``, rounded.
+
+    Stats carry a ``seasonId``; ESPN includes prior-season totals under the same
+    period/source keys, so callers must pass the season. A stat without a
+    ``seasonId`` is accepted for any season. Returns None if absent.
+    """
     for stat in player.get("stats") or []:
-        if stat.get("scoringPeriodId") == period and stat.get("statSourceId") == source:
-            return _round(stat.get("appliedTotal"))
+        if stat.get("scoringPeriodId") != period or stat.get("statSourceId") != source:
+            continue
+        stat_season = stat.get("seasonId")
+        if season is not None and stat_season is not None and stat_season != season:
+            continue
+        return _round(stat.get("appliedTotal"))
     return None
 
 
-def _projected_points(player: dict[str, Any], scoring_period: int) -> float | None:
-    return _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID)
+def _projected_points(
+    player: dict[str, Any], scoring_period: int, season: int | None
+) -> float | None:
+    return _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID, season=season)
 
 
-def _shape_matchup_player(entry: dict[str, Any], scoring_period: int) -> dict[str, Any]:
+def _shape_matchup_player(
+    entry: dict[str, Any], scoring_period: int, season: int | None
+) -> dict[str, Any]:
     pool_entry = entry.get("playerPoolEntry", {})
     row = _shape_player(entry)
     points = pool_entry.get("appliedStatTotal")
     row["points"] = _round(points) if points is not None else 0.0
-    row["projected"] = _projected_points(pool_entry.get("player", {}), scoring_period)
+    row["projected"] = _projected_points(pool_entry.get("player", {}), scoring_period, season)
     return row
 
 
@@ -131,6 +146,7 @@ def _shape_side(side: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
         side.get("rosterForCurrentScoringPeriod", {}).get("entries", []), key=_slot_sort_key
     )
     scoring_period = league.get("scoringPeriodId", -1)
+    season = league.get("seasonId")
     return {
         "team_id": team_id,
         "name": team.get("name"),
@@ -138,7 +154,7 @@ def _shape_side(side: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
         "score": _side_score(side),
         "projected": _round(projected),
         "win_probability": side.get("winProbability"),
-        "roster": [_shape_matchup_player(e, scoring_period) for e in entries],
+        "roster": [_shape_matchup_player(e, scoring_period, season) for e in entries],
     }
 
 
@@ -173,7 +189,7 @@ def _round1(value: Any) -> float | None:
     return None if value is None else round(float(value), 1)
 
 
-def shape_free_agent(entry: dict[str, Any], scoring_period: int) -> dict[str, Any]:
+def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) -> dict[str, Any]:
     """Shape one kona_player_info players[] entry for the free-agent list."""
     player = entry.get("player") or {}
     ownership = player.get("ownership") or {}
@@ -186,9 +202,17 @@ def shape_free_agent(entry: dict[str, Any], scoring_period: int) -> dict[str, An
         "status": entry.get("status"),
         "percent_owned": _round1(ownership.get("percentOwned")),
         "percent_change": _round(ownership.get("percentChange")),
-        "season_projected": _stat(player, period=SEASON_PERIOD, source=PROJECTION_SOURCE_ID),
-        "season_points": _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID),
-        "week_projected": _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID),
-        "week_points": _stat(player, period=scoring_period, source=ACTUAL_SOURCE_ID),
+        "season_projected": _stat(
+            player, period=SEASON_PERIOD, source=PROJECTION_SOURCE_ID, season=season
+        ),
+        "season_points": _stat(
+            player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID, season=season
+        ),
+        "week_projected": _stat(
+            player, period=scoring_period, source=PROJECTION_SOURCE_ID, season=season
+        ),
+        "week_points": _stat(
+            player, period=scoring_period, source=ACTUAL_SOURCE_ID, season=season
+        ),
         "positional_rank": season_rating.get("positionalRanking"),
     }

@@ -23,21 +23,31 @@
         },
         "stats": [
           {
+            "seasonId": 2025,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 999.0
+          },
+          {
+            "seasonId": 2026,
             "scoringPeriodId": 1,
             "statSourceId": 0,
             "appliedTotal": 8.0
           },
           {
+            "seasonId": 2026,
             "scoringPeriodId": 1,
             "statSourceId": 1,
             "appliedTotal": 4.5
           },
           {
+            "seasonId": 2026,
             "scoringPeriodId": 0,
             "statSourceId": 0,
             "appliedTotal": 8.0
           },
           {
+            "seasonId": 2026,
             "scoringPeriodId": 0,
             "statSourceId": 1,
             "appliedTotal": 113.78

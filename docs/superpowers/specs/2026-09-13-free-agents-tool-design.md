@@ -45,7 +45,9 @@ beyond the `percent_change` field, opponent/matchup ratings.
   averageDraftPosition}, stats: [...]}`.
 - `player.stats[]` items: `scoringPeriodId` (0 = season total, N = week N),
   `statSourceId` (0 = actual, 1 = projected), `appliedTotal`. Only the
-  current week's and the season's entries are present by default.
+  current week's and the season's entries are present by default. Entries
+  for the PRIOR season (same `scoringPeriodId 0` keys, different
+  `seasonId`) are also present — lookups must filter on `seasonId`.
 
 ## Layout changes
 
@@ -103,20 +105,25 @@ Behavior:
 Generalize the existing projection lookup:
 
 ```python
-def _stat(player: dict, *, period: int, source: int) -> float | None:
+def _stat(
+    player: dict, *, period: int, source: int, season: int | None
+) -> float | None:
     """appliedTotal (rounded 2) of the stats[] item with the given
-    scoringPeriodId and statSourceId, else None."""
+    scoringPeriodId, statSourceId, and seasonId, else None. ESPN includes
+    prior-season totals under the same period/source keys, so callers must
+    pass the season; a stat without a seasonId is accepted for any season."""
 ```
 
-`_projected_points(player, scoring_period)` becomes
-`_stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID)`. Add
-`ACTUAL_SOURCE_ID = 0` and `SEASON_PERIOD = 0` constants beside
-`PROJECTION_SOURCE_ID`. Matchup behavior and tests unchanged.
+`_projected_points(player, scoring_period, season)` becomes
+`_stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID,
+season=season)`. Add `ACTUAL_SOURCE_ID = 0` and `SEASON_PERIOD = 0`
+constants beside `PROJECTION_SOURCE_ID`. Matchup behavior and tests
+unchanged (`shape_matchup` reads `season` from `league["seasonId"]`).
 
 New:
 
 ```python
-def shape_free_agent(entry: dict, scoring_period: int) -> dict:
+def shape_free_agent(entry: dict, scoring_period: int, season: int) -> dict:
 ```
 
 Returns:
@@ -155,7 +162,10 @@ def get_free_agents(
         )
         league = client.get("kona_player_info", "mStatus", fantasy_filter=fantasy_filter)
         period = league.get("scoringPeriodId")
-        players = [shape_free_agent(e, period) for e in league.get("players", [])]
+        players = [
+            shape_free_agent(e, period, league.get("seasonId"))
+            for e in league.get("players", [])
+        ]
         return {
             "week": period,
             "position": position.upper() if position else None,

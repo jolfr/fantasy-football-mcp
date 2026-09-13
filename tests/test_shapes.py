@@ -192,7 +192,7 @@ def test_shape_matchup_player_points_null_becomes_zero(matchup_json):
 
 def test_shape_free_agent_full_entry(free_agents_json):
     entry = free_agents_json["players"][0]
-    out = shapes.shape_free_agent(entry, scoring_period=1)
+    out = shapes.shape_free_agent(entry, scoring_period=1, season=2026)
     assert out == {
         "name": "Waiver Back",
         "position": "RB",
@@ -211,7 +211,7 @@ def test_shape_free_agent_full_entry(free_agents_json):
 
 def test_shape_free_agent_sparse_entry_yields_nulls(free_agents_json):
     entry = free_agents_json["players"][1]
-    out = shapes.shape_free_agent(entry, scoring_period=1)
+    out = shapes.shape_free_agent(entry, scoring_period=1, season=2026)
     assert out["name"] == "Sparse Receiver"
     assert out["position"] == "WR"
     assert out["pro_team"] == "ARI"
@@ -230,8 +230,19 @@ def test_shape_free_agent_sparse_entry_yields_nulls(free_agents_json):
 
 
 def test_shape_free_agent_tolerates_missing_player():
-    out = shapes.shape_free_agent({"status": "FREEAGENT"}, scoring_period=1)
+    out = shapes.shape_free_agent({"status": "FREEAGENT"}, scoring_period=1, season=2026)
     assert out["name"] is None
     assert out["position"] == "UNKNOWN_-1"
     assert out["status"] == "FREEAGENT"
     assert out["season_projected"] is None
+
+
+def test_stat_ignores_other_seasons_but_accepts_unlabeled():
+    player = {"stats": [
+        {"seasonId": 2025, "scoringPeriodId": 0, "statSourceId": 1, "appliedTotal": 999.0},
+        {"seasonId": 2026, "scoringPeriodId": 0, "statSourceId": 1, "appliedTotal": 100.0},
+        {"scoringPeriodId": 0, "statSourceId": 0, "appliedTotal": 50.0},
+    ]}
+    assert shapes._stat(player, period=0, source=1, season=2026) == 100.0
+    assert shapes._stat(player, period=0, source=0, season=2026) == 50.0
+    assert shapes._stat(player, period=0, source=1, season=2024) is None
