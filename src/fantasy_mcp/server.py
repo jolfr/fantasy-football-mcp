@@ -91,8 +91,10 @@ def get_my_team() -> dict[str, Any]:
 def get_matchup() -> dict[str, Any]:
     """Return the user's current-week head-to-head matchup with live scoring.
 
-    Use this for "am I winning?", "who am I playing?", "who's left to play?",
-    or "should I have started X?". Covers the current week only.
+    Use this for "am I winning?", "who am I playing?", or "should I have started
+    X?". Covers the current week only. There is no per-player game-state field:
+    points of 0.0 may mean the player has not played yet OR played and scored
+    nothing -- do not claim to know which.
 
     Top level: week; status (UPCOMING, IN_PROGRESS, or FINAL); is_home; my_team;
     opponent. Each team has: team_id, name, abbrev, score (fantasy points so far
