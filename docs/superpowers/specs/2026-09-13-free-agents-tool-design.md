@@ -141,7 +141,7 @@ Returns:
 | `season_points`    | `_stat(period=0, source=0)`                                  |
 | `week_projected`   | `_stat(period=scoring_period, source=1)`                     |
 | `week_points`      | `_stat(period=scoring_period, source=0)`                     |
-| `positional_rank`  | `entry.ratings["0"].positionalRanking`; null if absent       |
+| `positional_rank`  | `entry.ratings["0"].positionalRanking`; null if absent or 0 (ESPN's "unranked") |
 
 All lookups use `.get`; a missing `player`, `ownership`, `stats`, or
 `ratings` yields nulls (and `UNKNOWN_-1` names), never an exception.

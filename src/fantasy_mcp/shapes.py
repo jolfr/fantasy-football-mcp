@@ -214,5 +214,6 @@ def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) ->
         "week_points": _stat(
             player, period=scoring_period, source=ACTUAL_SOURCE_ID, season=season
         ),
-        "positional_rank": season_rating.get("positionalRanking"),
+        # ESPN reports 0 for unranked players; surface that as null, not "rank 0".
+        "positional_rank": season_rating.get("positionalRanking") or None,
     }

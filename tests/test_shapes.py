@@ -229,6 +229,13 @@ def test_shape_free_agent_sparse_entry_yields_nulls(free_agents_json):
         assert out[key] is None, key
 
 
+def test_shape_free_agent_rank_zero_is_null(free_agents_json):
+    entry = free_agents_json["players"][0]
+    entry["ratings"]["0"]["positionalRanking"] = 0
+    out = shapes.shape_free_agent(entry, scoring_period=1, season=2026)
+    assert out["positional_rank"] is None
+
+
 def test_shape_free_agent_tolerates_missing_player():
     out = shapes.shape_free_agent({"status": "FREEAGENT"}, scoring_period=1, season=2026)
     assert out["name"] is None
