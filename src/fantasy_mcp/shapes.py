@@ -167,3 +167,28 @@ def shape_matchup(game: dict[str, Any], league: dict[str, Any], my_team_id: int)
         "my_team": _shape_side(mine, league),
         "opponent": _shape_side(theirs, league),
     }
+
+
+def _round1(value: Any) -> float | None:
+    return None if value is None else round(float(value), 1)
+
+
+def shape_free_agent(entry: dict[str, Any], scoring_period: int) -> dict[str, Any]:
+    """Shape one kona_player_info players[] entry for the free-agent list."""
+    player = entry.get("player") or {}
+    ownership = player.get("ownership") or {}
+    season_rating = (entry.get("ratings") or {}).get("0") or {}
+    return {
+        "name": player.get("fullName"),
+        "position": ids.name(ids.POSITIONS, player.get("defaultPositionId", -1)),
+        "pro_team": ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1)),
+        "injury_status": player.get("injuryStatus"),
+        "status": entry.get("status"),
+        "percent_owned": _round1(ownership.get("percentOwned")),
+        "percent_change": _round(ownership.get("percentChange")),
+        "season_projected": _stat(player, period=SEASON_PERIOD, source=PROJECTION_SOURCE_ID),
+        "season_points": _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID),
+        "week_projected": _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID),
+        "week_points": _stat(player, period=scoring_period, source=ACTUAL_SOURCE_ID),
+        "positional_rank": season_rating.get("positionalRanking"),
+    }

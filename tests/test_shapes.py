@@ -188,3 +188,50 @@ def test_shape_matchup_player_points_null_becomes_zero(matchup_json):
     game["home"]["rosterForCurrentScoringPeriod"]["entries"][1]["playerPoolEntry"]["appliedStatTotal"] = None
     out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
     assert out["my_team"]["roster"][0]["points"] == 0.0
+
+
+def test_shape_free_agent_full_entry(free_agents_json):
+    entry = free_agents_json["players"][0]
+    out = shapes.shape_free_agent(entry, scoring_period=1)
+    assert out == {
+        "name": "Waiver Back",
+        "position": "RB",
+        "pro_team": "SF",
+        "injury_status": "ACTIVE",
+        "status": "WAIVERS",
+        "percent_owned": 15.4,
+        "percent_change": -0.03,
+        "season_projected": 113.78,
+        "season_points": 8.0,
+        "week_projected": 4.5,
+        "week_points": 8.0,
+        "positional_rank": 38,
+    }
+
+
+def test_shape_free_agent_sparse_entry_yields_nulls(free_agents_json):
+    entry = free_agents_json["players"][1]
+    out = shapes.shape_free_agent(entry, scoring_period=1)
+    assert out["name"] == "Sparse Receiver"
+    assert out["position"] == "WR"
+    assert out["pro_team"] == "ARI"
+    assert out["injury_status"] == "QUESTIONABLE"
+    assert out["status"] == "FREEAGENT"
+    for key in (
+        "percent_owned",
+        "percent_change",
+        "season_projected",
+        "season_points",
+        "week_projected",
+        "week_points",
+        "positional_rank",
+    ):
+        assert out[key] is None, key
+
+
+def test_shape_free_agent_tolerates_missing_player():
+    out = shapes.shape_free_agent({"status": "FREEAGENT"}, scoring_period=1)
+    assert out["name"] is None
+    assert out["position"] == "UNKNOWN_-1"
+    assert out["status"] == "FREEAGENT"
+    assert out["season_projected"] is None
