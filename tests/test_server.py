@@ -45,6 +45,16 @@ def test_shape_team_orders_starters_first_and_maps_ids(league_json):
     assert shaped["roster"][2]["slot"] == "BENCH"
 
 
+def test_shape_team_tolerates_entry_without_player(league_json):
+    team = league_json["teams"][0]
+    team["roster"]["entries"].append({"lineupSlotId": 21})
+    shaped = server.shape_team(team)
+    ir_row = shaped["roster"][-1]
+    assert ir_row["slot"] == "IR"
+    assert ir_row["name"] is None
+    assert ir_row["position"] == "UNKNOWN_-1"
+
+
 def test_shape_whoami(league_json, settings):
     out = server.shape_whoami(league_json, team_id=3, settings=settings)
     assert out == {

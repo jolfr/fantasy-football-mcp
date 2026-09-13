@@ -56,7 +56,7 @@ def shape_whoami(league: dict[str, Any], team_id: int, settings: Settings) -> di
 
 
 def _shape_player(entry: dict[str, Any]) -> dict[str, Any]:
-    player = entry["playerPoolEntry"]["player"]
+    player = entry.get("playerPoolEntry", {}).get("player", {})
     return {
         "name": player.get("fullName"),
         "position": ids.name(ids.POSITIONS, player.get("defaultPositionId", -1)),
@@ -96,7 +96,12 @@ def shape_team(team: dict[str, Any]) -> dict[str, Any]:
 
 @mcp.tool
 def whoami() -> dict[str, Any]:
-    """Confirm ESPN auth works: return the league name, season, and the user's team."""
+    """Verify ESPN credentials and league configuration.
+
+    Call this first. Cheap (one small request, no roster data). Returns the league
+    id/name, season, and the user's team id/name. Fails with an explanatory
+    message if cookies are expired or the league/team can't be resolved.
+    """
     try:
         client = _get_client()
         league = client.get("mTeam")
@@ -108,7 +113,14 @@ def whoami() -> dict[str, Any]:
 
 @mcp.tool
 def get_my_team() -> dict[str, Any]:
-    """Return the user's fantasy team: record, points, and full roster with lineup slots."""
+    """Return the user's fantasy team: season record, points, and full roster.
+
+    Each roster row has: name; position (the player's NFL position, e.g. QB/RB/WR);
+    slot (the fantasy lineup slot — BENCH and IR mean not starting, anything else
+    is a starter); pro_team (NFL team abbreviation); injury_status. Rows are
+    ordered starters first, then bench, then IR. Record and points are
+    season-to-date for the configured season.
+    """
     try:
         client = _get_client()
         league = client.get("mTeam", "mRoster")
