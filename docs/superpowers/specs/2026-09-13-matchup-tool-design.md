@@ -56,7 +56,8 @@ tests/
 
 ## `shapes.py`
 
-Moved verbatim from `server.py` (behavior unchanged):
+Moved from `server.py` (behavior unchanged; `team_by_id` now shares a private
+`_find_team` lookup with `_shape_side`):
 `team_by_id`, `shape_whoami`, `shape_team`, `_shape_player`, `_slot_sort_key`.
 
 New:
@@ -85,7 +86,7 @@ def shape_matchup(game: dict, league: dict, my_team_id: int) -> dict:
 
 Row = `_shape_player(entry)` fields (`name`, `position`, `slot`, `pro_team`,
 `injury_status`) plus:
-- `points`: `playerPoolEntry.appliedStatTotal` rounded 2 (absent → `0.0`)
+- `points`: `playerPoolEntry.appliedStatTotal` rounded 2 (absent/null → `0.0`)
 - `projected`: `appliedTotal` of the `player.stats[]` item with
   `statSourceId == 1` and `scoringPeriodId == league["scoringPeriodId"]`,
   rounded 2; `null` if none
@@ -93,8 +94,8 @@ Row = `_shape_player(entry)` fields (`name`, `position`, `slot`, `pro_team`,
 Rows ordered by `_slot_sort_key` (starters, then BENCH, then IR).
 
 Side fields:
-- `score`: `totalPointsLive` if key present else `totalPoints`; rounded 2
-- `projected`: `totalProjectedPointsLive` if present else
+- `score`: `totalPointsLive` if not null else `totalPoints`; null → `0.0`; rounded 2
+- `projected`: `totalProjectedPointsLive` if not null else
   `totalProjectedPoints`; `null` if neither; rounded 2
 - `win_probability`: `winProbability` or `null`
 - `name`/`abbrev`: from `team_by_id`-style lookup in `league["teams"]`;
@@ -120,14 +121,17 @@ def get_matchup() -> dict[str, Any]:
         client = _get_client()
         league = client.get("mMatchup", "mMatchupScore", "mTeam")
         team_id = client.find_my_team_id(league)
-        week = league["status"]["currentMatchupPeriod"]
+        week = league.get("status", {}).get("currentMatchupPeriod")
+        if week is None:
+            raise EspnError("ESPN response is missing status.currentMatchupPeriod.")
         game = find_matchup(league, team_id, week)
         return shape_matchup(game, league, team_id)
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 ```
 
-Docstring explains: when to use (score/projection/who's left to play),
+Docstring explains: when to use (score/projection/opponent/per-player points;
+it cannot tell who has played yet),
 field meanings (`score` is live points so far; `projected` is ESPN's live
 projection; `status` values; `slot` BENCH/IR = not counting), and that it
 covers the current week only.

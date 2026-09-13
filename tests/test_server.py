@@ -73,6 +73,15 @@ async def test_get_matchup_tool(client, matchup_json):
 
 
 @respx.mock
+async def test_get_matchup_tool_missing_period_is_tool_error(client, matchup_json):
+    del matchup_json["status"]
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=matchup_json))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="currentMatchupPeriod"):
+            await c.call_tool("get_matchup", {})
+
+
+@respx.mock
 async def test_get_matchup_tool_bye_week_is_tool_error(client, matchup_json):
     matchup_json["status"]["currentMatchupPeriod"] = 2
     respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=matchup_json))

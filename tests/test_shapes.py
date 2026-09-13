@@ -181,3 +181,10 @@ def test_shape_matchup_tolerates_explicit_null_scores(matchup_json):
     assert out["my_team"]["score"] == 0.0
     assert out["my_team"]["projected"] == 113.76  # falls back to totalProjectedPoints
     assert out["status"] == "IN_PROGRESS"  # away side still has live points
+
+
+def test_shape_matchup_player_points_null_becomes_zero(matchup_json):
+    game = matchup_json["schedule"][0]
+    game["home"]["rosterForCurrentScoringPeriod"]["entries"][1]["playerPoolEntry"]["appliedStatTotal"] = None
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["my_team"]["roster"][0]["points"] == 0.0

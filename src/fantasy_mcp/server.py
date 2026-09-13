@@ -19,7 +19,7 @@ answering from memory. Call get_my_team before giving lineup, start/sit, or
 roster advice, and base the advice on the roster and injury statuses it returns.
 
 Use get_matchup for anything about this week's game: score, projection, win
-probability, opponent, or who has played. Only whoami, get_my_team, and
+probability, opponent, or per-player points. Only whoami, get_my_team, and
 get_matchup exist. There is no standings, free agent, transaction, or
 past-week data yet -- say so instead of inventing it.
 
@@ -110,6 +110,8 @@ def get_matchup() -> dict[str, Any]:
         league = client.get("mMatchup", "mMatchupScore", "mTeam")
         team_id = client.find_my_team_id(league)
         week = league.get("status", {}).get("currentMatchupPeriod")
+        if week is None:
+            raise EspnError("ESPN response is missing status.currentMatchupPeriod.")
         game = find_matchup(league, team_id, week)
         return shape_matchup(game, league, team_id)
     except (EspnError, ConfigError) as e:

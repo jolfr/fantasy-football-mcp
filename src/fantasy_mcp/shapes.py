@@ -8,6 +8,8 @@ from fantasy_mcp import ids
 from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
 
+PROJECTION_SOURCE_ID = 1  # player.stats[].statSourceId: 1 = projected, 0 = actual
+
 
 def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
     for team in league.get("teams", []):
@@ -84,9 +86,6 @@ def find_matchup(league: dict[str, Any], team_id: int, period: int) -> dict[str,
     raise EspnError(f"No matchup for your team in week {period} (bye week?).")
 
 
-PROJECTION_SOURCE_ID = 1  # player.stats[].statSourceId: 1 = projected, 0 = actual
-
-
 def _round(value: Any) -> float | None:
     return None if value is None else round(float(value), 2)
 
@@ -104,7 +103,8 @@ def _projected_points(player: dict[str, Any], scoring_period: int) -> float | No
 def _shape_matchup_player(entry: dict[str, Any], scoring_period: int) -> dict[str, Any]:
     pool_entry = entry.get("playerPoolEntry", {})
     row = _shape_player(entry)
-    row["points"] = _round(pool_entry.get("appliedStatTotal", 0.0))
+    points = pool_entry.get("appliedStatTotal")
+    row["points"] = _round(points) if points is not None else 0.0
     row["projected"] = _projected_points(pool_entry.get("player", {}), scoring_period)
     return row
 
