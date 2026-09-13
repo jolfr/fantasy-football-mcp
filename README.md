@@ -32,6 +32,9 @@ mentioning "cookies" — re-copy `espn_s2` and `SWID` from your browser.
 - `get_my_team` — your record, points, and roster with lineup slots.
 - `get_matchup` — this week's head-to-head: live score, projection, win
   probability, and both rosters with per-player actual/projected points.
+- `get_free_agents` — available players (free agents + waivers), optionally by
+  position, sorted by % rostered or season projection, with ownership trend,
+  projections, and positional rank.
 
 ## Develop
 

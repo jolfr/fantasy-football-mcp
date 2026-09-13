@@ -9,7 +9,15 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
-from fantasy_mcp.shapes import find_matchup, shape_matchup, shape_team, shape_whoami, team_by_id
+from fantasy_mcp.filters import free_agent_filter
+from fantasy_mcp.shapes import (
+    find_matchup,
+    shape_free_agent,
+    shape_matchup,
+    shape_team,
+    shape_whoami,
+    team_by_id,
+)
 
 INSTRUCTIONS = """\
 Read-only access to the user's ESPN fantasy football league.
@@ -19,9 +27,11 @@ answering from memory. Call get_my_team before giving lineup, start/sit, or
 roster advice, and base the advice on the roster and injury statuses it returns.
 
 Use get_matchup for anything about this week's game: score, projection, win
-probability, opponent, or per-player points. Only whoami, get_my_team, and
-get_matchup exist. There is no standings, free agent, transaction, or
-past-week data yet -- say so instead of inventing it.
+probability, opponent, or per-player points. Use get_free_agents for pickup,
+waiver, or "who's available" questions, and compare candidates against the
+roster from get_my_team before recommending a move. Only whoami, get_my_team,
+get_matchup, and get_free_agents exist. There is no standings, transaction,
+or past-week data yet -- say so instead of inventing it.
 
 Nothing here can modify the team. If the user asks to make a move, describe
 what to do and let them do it on ESPN.
@@ -115,6 +125,48 @@ def get_matchup() -> dict[str, Any]:
         game = find_matchup(league, team_id, week)
         return shape_matchup(game, league, team_id)
     except (EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool
+def get_free_agents(
+    position: str | None = None,
+    limit: int = 10,
+    sort: str = "owned",
+) -> dict[str, Any]:
+    """List available players (free agents and waiver claims) in the user's league.
+
+    Use this for "who should I pick up?", "best available RB", or "who's trending".
+
+    Args: position -- one of QB, RB, WR, TE, K, D_ST (case-insensitive; D/ST also
+    accepted); omit for all positions. limit -- 1 to 50, default 10. sort --
+    "owned" (most rostered across ESPN first, default) or "projected" (highest
+    season projection first).
+
+    Each player row: name, position, pro_team, injury_status, status (FREEAGENT =
+    add immediately; WAIVERS = must submit a claim), percent_owned (% of ESPN
+    leagues rostering them), percent_change (ownership trend -- positive means
+    being picked up), season_projected / season_points (full-season projected /
+    scored so far), week_projected / week_points (current NFL week), and
+    positional_rank (ESPN's season rank at their position; null if unavailable).
+    Next-week projections are not available from this tool.
+    """
+    try:
+        client = _get_client()
+        fantasy_filter = free_agent_filter(
+            season=client.settings.season, position=position, limit=limit, sort=sort
+        )
+        league = client.get("kona_player_info", "mStatus", fantasy_filter=fantasy_filter)
+        period = league.get("scoringPeriodId")
+        season = league.get("seasonId", client.settings.season)
+        players = [shape_free_agent(e, period, season) for e in league.get("players", [])]
+        return {
+            "week": period,
+            "position": position.upper().replace("/", "_") if position else None,
+            "sort": sort,
+            "players": players,
+        }
+    except (ValueError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
 
