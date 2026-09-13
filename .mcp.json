@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fantasy": {
+      "command": "uv",
+      "args": ["run", "--directory", "/Users/jcarroll/Repositories/fantasy-mcp", "fantasy-mcp"]
+    }
+  }
+}
