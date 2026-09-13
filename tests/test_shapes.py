@@ -54,3 +54,19 @@ def test_shape_whoami(league_json, settings):
 def test_team_by_id_missing_raises(league_json):
     with pytest.raises(EspnError, match="ESPN_TEAM_ID"):
         shapes.team_by_id(league_json, 42)
+
+
+def test_find_matchup_returns_game_containing_team(matchup_json):
+    game = shapes.find_matchup(matchup_json, team_id=12, period=1)
+    assert game["id"] == 6
+    assert game["home"]["teamId"] == 12
+
+
+def test_find_matchup_matches_away_side_too(matchup_json):
+    game = shapes.find_matchup(matchup_json, team_id=11, period=1)
+    assert game["id"] == 6
+
+
+def test_find_matchup_bye_week_raises(matchup_json):
+    with pytest.raises(EspnError, match="week 2"):
+        shapes.find_matchup(matchup_json, team_id=12, period=2)

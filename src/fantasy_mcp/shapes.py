@@ -64,3 +64,14 @@ def shape_team(team: dict[str, Any]) -> dict[str, Any]:
         "points_against": overall.get("pointsAgainst", 0.0),
         "roster": [_shape_player(e) for e in entries],
     }
+
+
+def find_matchup(league: dict[str, Any], team_id: int, period: int) -> dict[str, Any]:
+    """Return the schedule entry for ``period`` in which ``team_id`` plays."""
+    for game in league.get("schedule", []):
+        if game.get("matchupPeriodId") != period:
+            continue
+        sides = (game.get("home", {}).get("teamId"), game.get("away", {}).get("teamId"))
+        if team_id in sides:
+            return game
+    raise EspnError(f"No matchup for your team in week {period} (bye week?).")
