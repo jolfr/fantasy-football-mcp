@@ -17,6 +17,10 @@ SORTS = ("owned", "projected")
 MAX_LIMIT = 50
 
 
+class FilterError(ValueError):
+    """A tool argument could not be turned into a valid ESPN filter."""
+
+
 def normalize_position(position: str) -> str:
     """Canonical position key: upper-case, with ``D/ST`` accepted as ``D_ST``."""
     return position.upper().replace("/", "_")
@@ -27,9 +31,9 @@ def free_agent_filter(
 ) -> dict[str, Any]:
     """Filter for available players, optionally by position, sorted by ownership or projection."""
     if not 1 <= limit <= MAX_LIMIT:
-        raise ValueError(f"limit must be between 1 and {MAX_LIMIT} (got {limit}).")
+        raise FilterError(f"limit must be between 1 and {MAX_LIMIT} (got {limit}).")
     if sort not in SORTS:
-        raise ValueError(f"sort must be one of {', '.join(SORTS)} (got {sort!r}).")
+        raise FilterError(f"sort must be one of {', '.join(SORTS)} (got {sort!r}).")
 
     players: dict[str, Any] = {
         "filterStatus": {"value": ["FREEAGENT", "WAIVERS"]},
@@ -39,7 +43,7 @@ def free_agent_filter(
     if position is not None:
         slot = POSITION_SLOTS.get(normalize_position(position))
         if slot is None:
-            raise ValueError(
+            raise FilterError(
                 f"position must be one of {', '.join(POSITION_SLOTS)} (got {position!r})."
             )
         players["filterSlotIds"] = {"value": [slot]}

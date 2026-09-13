@@ -244,12 +244,12 @@ def test_shape_free_agent_tolerates_missing_player():
     assert out["season_projected"] is None
 
 
-def test_stat_ignores_other_seasons_but_accepts_unlabeled():
+def test_stat_requires_exact_season_match():
     player = {"stats": [
         {"seasonId": 2025, "scoringPeriodId": 0, "statSourceId": 1, "appliedTotal": 999.0},
+        {"scoringPeriodId": 0, "statSourceId": 1, "appliedTotal": 555.0},  # unlabeled: never matches
         {"seasonId": 2026, "scoringPeriodId": 0, "statSourceId": 1, "appliedTotal": 100.0},
-        {"scoringPeriodId": 0, "statSourceId": 0, "appliedTotal": 50.0},
     ]}
     assert shapes._stat(player, period=0, source=1, season=2026) == 100.0
-    assert shapes._stat(player, period=0, source=0, season=2026) == 50.0
     assert shapes._stat(player, period=0, source=1, season=2024) is None
+    assert shapes._stat(player, period=0, source=0, season=2026) is None

@@ -90,38 +90,31 @@ def find_matchup(league: dict[str, Any], team_id: int, period: int) -> dict[str,
     raise EspnError(f"No matchup for your team in week {period} (bye week?).")
 
 
-def _round(value: Any) -> float | None:
-    return None if value is None else round(float(value), 2)
+def _round(value: Any, ndigits: int = 2) -> float | None:
+    return None if value is None else round(float(value), ndigits)
 
 
-def _stat(
-    player: dict[str, Any], *, period: int, source: int, season: int | None
-) -> float | None:
-    """appliedTotal of the stats[] item for ``period``/``source`` in ``season``, rounded.
+def _stat(player: dict[str, Any], *, period: int, source: int, season: int) -> float | None:
+    """appliedTotal of the stats[] item for ``period``/``source``/``season``, rounded.
 
-    Stats carry a ``seasonId``; ESPN includes prior-season totals under the same
-    period/source keys, so callers must pass the season. A stat without a
-    ``seasonId`` is accepted for any season. Returns None if absent.
+    ESPN includes prior-season totals under the same period/source keys, so the
+    ``seasonId`` must match exactly. Returns None if no such item exists.
     """
     for stat in player.get("stats") or []:
-        if stat.get("scoringPeriodId") != period or stat.get("statSourceId") != source:
-            continue
-        stat_season = stat.get("seasonId")
-        if season is not None and stat_season is not None and stat_season != season:
-            continue
-        return _round(stat.get("appliedTotal"))
+        if (
+            stat.get("scoringPeriodId") == period
+            and stat.get("statSourceId") == source
+            and stat.get("seasonId") == season
+        ):
+            return _round(stat.get("appliedTotal"))
     return None
 
 
-def _projected_points(
-    player: dict[str, Any], scoring_period: int, season: int | None
-) -> float | None:
+def _projected_points(player: dict[str, Any], scoring_period: int, season: int) -> float | None:
     return _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID, season=season)
 
 
-def _shape_matchup_player(
-    entry: dict[str, Any], scoring_period: int, season: int | None
-) -> dict[str, Any]:
+def _shape_matchup_player(entry: dict[str, Any], scoring_period: int, season: int) -> dict[str, Any]:
     pool_entry = entry.get("playerPoolEntry", {})
     row = _shape_player(entry)
     points = pool_entry.get("appliedStatTotal")
@@ -146,7 +139,7 @@ def _shape_side(side: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
         side.get("rosterForCurrentScoringPeriod", {}).get("entries", []), key=_slot_sort_key
     )
     scoring_period = league.get("scoringPeriodId", -1)
-    season = league.get("seasonId")
+    season = league.get("seasonId", -1)  # -1: no stat can match; never guess a year
     return {
         "team_id": team_id,
         "name": team.get("name"),
@@ -185,10 +178,6 @@ def shape_matchup(game: dict[str, Any], league: dict[str, Any], my_team_id: int)
     }
 
 
-def _round1(value: Any) -> float | None:
-    return None if value is None else round(float(value), 1)
-
-
 def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) -> dict[str, Any]:
     """Shape one kona_player_info players[] entry for the free-agent list."""
     player = entry.get("player") or {}
@@ -200,7 +189,7 @@ def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) ->
         "pro_team": ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1)),
         "injury_status": player.get("injuryStatus"),
         "status": entry.get("status"),
-        "percent_owned": _round1(ownership.get("percentOwned")),
+        "percent_owned": _round(ownership.get("percentOwned"), ndigits=1),
         "percent_change": _round(ownership.get("percentChange")),
         "season_projected": _stat(
             player, period=SEASON_PERIOD, source=PROJECTION_SOURCE_ID, season=season

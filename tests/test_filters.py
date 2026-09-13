@@ -2,6 +2,7 @@ import pytest
 
 from fantasy_mcp.filters import (
     MAX_LIMIT,
+    FilterError,
     POSITION_SLOTS,
     SORTS,
     free_agent_filter,
@@ -49,7 +50,7 @@ def test_projected_sort_uses_season_stat_id():
 
 
 def test_invalid_position_lists_valid_values():
-    with pytest.raises(ValueError, match="position must be one of") as exc:
+    with pytest.raises(FilterError, match="position must be one of") as exc:
         free_agent_filter(season=2026, position="FLEX", limit=10, sort="owned")
     for name in POSITION_SLOTS:
         assert name in str(exc.value)
@@ -57,7 +58,7 @@ def test_invalid_position_lists_valid_values():
 
 
 def test_invalid_sort_lists_valid_values():
-    with pytest.raises(ValueError, match="sort must be one of") as exc:
+    with pytest.raises(FilterError, match="sort must be one of") as exc:
         free_agent_filter(season=2026, position=None, limit=10, sort="points")
     for name in SORTS:
         assert name in str(exc.value)
@@ -65,7 +66,7 @@ def test_invalid_sort_lists_valid_values():
 
 @pytest.mark.parametrize("limit", [0, MAX_LIMIT + 1, -3])
 def test_limit_out_of_range(limit):
-    with pytest.raises(ValueError, match=f"limit must be between 1 and {MAX_LIMIT}"):
+    with pytest.raises(FilterError, match=f"limit must be between 1 and {MAX_LIMIT}"):
         free_agent_filter(season=2026, position=None, limit=limit, sort="owned")
 
 

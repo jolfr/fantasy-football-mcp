@@ -9,7 +9,7 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
-from fantasy_mcp.filters import free_agent_filter, normalize_position
+from fantasy_mcp.filters import FilterError, free_agent_filter, normalize_position
 from fantasy_mcp.shapes import (
     find_matchup,
     shape_free_agent,
@@ -169,7 +169,7 @@ def get_free_agents(
             "sort": sort,
             "players": players,
         }
-    except (ValueError, EspnError, ConfigError) as e:
+    except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
 
