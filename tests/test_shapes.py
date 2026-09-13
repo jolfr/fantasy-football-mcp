@@ -170,3 +170,14 @@ def test_shape_matchup_unknown_opponent_and_missing_roster(matchup_json):
     assert out["opponent"]["name"] is None
     assert out["opponent"]["abbrev"] is None
     assert out["opponent"]["roster"] == []
+
+
+def test_shape_matchup_tolerates_explicit_null_scores(matchup_json):
+    game = matchup_json["schedule"][0]
+    game["home"]["totalPointsLive"] = None
+    game["home"]["totalPoints"] = None
+    game["home"]["totalProjectedPointsLive"] = None
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["my_team"]["score"] == 0.0
+    assert out["my_team"]["projected"] == 113.76  # falls back to totalProjectedPoints
+    assert out["status"] == "IN_PROGRESS"  # away side still has live points

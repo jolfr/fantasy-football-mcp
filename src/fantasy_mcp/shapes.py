@@ -9,10 +9,17 @@ from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
 
 
-def team_by_id(league: dict[str, Any], team_id: int) -> dict[str, Any]:
+def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
     for team in league.get("teams", []):
         if team.get("id") == team_id:
             return team
+    return None
+
+
+def team_by_id(league: dict[str, Any], team_id: int) -> dict[str, Any]:
+    team = _find_team(league, team_id)
+    if team is not None:
+        return team
     raise EspnError(
         f"Team id {team_id} is not in this league. Check ESPN_TEAM_ID "
         "(or unset it to auto-detect your team)."
@@ -104,13 +111,16 @@ def _shape_matchup_player(entry: dict[str, Any], scoring_period: int) -> dict[st
 
 def _side_score(side: dict[str, Any]) -> float:
     live = side.get("totalPointsLive")
-    return _round(live if live is not None else side.get("totalPoints", 0.0))
+    value = live if live is not None else side.get("totalPoints")
+    return _round(value) if value is not None else 0.0
 
 
 def _shape_side(side: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
     team_id = side.get("teamId")
-    team = next((t for t in league.get("teams", []) if t.get("id") == team_id), {})
-    projected = side.get("totalProjectedPointsLive", side.get("totalProjectedPoints"))
+    team = _find_team(league, team_id) or {}
+    projected = side.get("totalProjectedPointsLive")
+    if projected is None:
+        projected = side.get("totalProjectedPoints")
     entries = sorted(
         side.get("rosterForCurrentScoringPeriod", {}).get("entries", []), key=_slot_sort_key
     )
@@ -135,6 +145,12 @@ def _matchup_status(game: dict[str, Any]) -> str:
 
 
 def shape_matchup(game: dict[str, Any], league: dict[str, Any], my_team_id: int) -> dict[str, Any]:
+    """Shape one schedule game from the perspective of ``my_team_id``.
+
+    Side-level ``score``/``projected`` are ESPN's matchup-period totals; roster
+    rows come from ``rosterForCurrentScoringPeriod`` and cover the current NFL
+    week only (identical for 1-week matchup periods, which is all we support).
+    """
     home, away = game.get("home", {}), game.get("away", {})
     is_home = home.get("teamId") == my_team_id
     mine, theirs = (home, away) if is_home else (away, home)
