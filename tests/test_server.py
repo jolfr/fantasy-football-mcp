@@ -130,6 +130,15 @@ async def test_get_free_agents_defaults(client, free_agents_json):
 
 
 @respx.mock
+async def test_get_free_agents_missing_period_is_tool_error(client, free_agents_json):
+    del free_agents_json["scoringPeriodId"]
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=free_agents_json))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="scoringPeriodId"):
+            await c.call_tool("get_free_agents", {})
+
+
+@respx.mock
 async def test_get_free_agents_invalid_position_is_tool_error(client):
     route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
     async with Client(server.mcp) as c:

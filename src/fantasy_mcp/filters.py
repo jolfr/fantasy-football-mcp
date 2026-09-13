@@ -17,6 +17,11 @@ SORTS = ("owned", "projected")
 MAX_LIMIT = 50
 
 
+def normalize_position(position: str) -> str:
+    """Canonical position key: upper-case, with ``D/ST`` accepted as ``D_ST``."""
+    return position.upper().replace("/", "_")
+
+
 def free_agent_filter(
     *, season: int, position: str | None, limit: int, sort: str
 ) -> dict[str, Any]:
@@ -32,7 +37,7 @@ def free_agent_filter(
     }
 
     if position is not None:
-        slot = POSITION_SLOTS.get(position.upper().replace("/", "_"))
+        slot = POSITION_SLOTS.get(normalize_position(position))
         if slot is None:
             raise ValueError(
                 f"position must be one of {', '.join(POSITION_SLOTS)} (got {position!r})."

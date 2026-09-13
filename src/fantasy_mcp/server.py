@@ -9,7 +9,7 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
-from fantasy_mcp.filters import free_agent_filter
+from fantasy_mcp.filters import free_agent_filter, normalize_position
 from fantasy_mcp.shapes import (
     find_matchup,
     shape_free_agent,
@@ -147,9 +147,10 @@ def get_free_agents(
     add immediately; WAIVERS = must submit a claim), percent_owned (% of ESPN
     leagues rostering them), percent_change (ownership trend -- positive means
     being picked up), season_projected / season_points (full-season projected /
-    scored so far), week_projected / week_points (current NFL week), and
-    positional_rank (ESPN's season rank at their position; null if unavailable).
-    Next-week projections are not available from this tool.
+    scored so far), week_projected / week_points (current NFL week; 0.0 may mean
+    not played yet OR played and scored nothing), and positional_rank (ESPN's
+    season rank at their position; null if unavailable). Next-week projections
+    are not available from this tool.
     """
     try:
         client = _get_client()
@@ -158,11 +159,13 @@ def get_free_agents(
         )
         league = client.get("kona_player_info", "mStatus", fantasy_filter=fantasy_filter)
         period = league.get("scoringPeriodId")
+        if period is None:
+            raise EspnError("ESPN response is missing scoringPeriodId.")
         season = league.get("seasonId", client.settings.season)
         players = [shape_free_agent(e, period, season) for e in league.get("players", [])]
         return {
             "week": period,
-            "position": position.upper().replace("/", "_") if position else None,
+            "position": normalize_position(position) if position else None,
             "sort": sort,
             "players": players,
         }

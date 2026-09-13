@@ -1,6 +1,12 @@
 import pytest
 
-from fantasy_mcp.filters import MAX_LIMIT, POSITION_SLOTS, SORTS, free_agent_filter
+from fantasy_mcp.filters import (
+    MAX_LIMIT,
+    POSITION_SLOTS,
+    SORTS,
+    free_agent_filter,
+    normalize_position,
+)
 
 STATUS = {"value": ["FREEAGENT", "WAIVERS"]}
 
@@ -74,3 +80,8 @@ def test_each_call_returns_independent_dicts():
 def test_limit_boundaries_are_valid(limit):
     out = free_agent_filter(season=2026, position=None, limit=limit, sort="owned")
     assert out["players"]["limit"] == limit
+
+
+@pytest.mark.parametrize("raw, expected", [("rb", "RB"), ("d/st", "D_ST"), ("D_ST", "D_ST")])
+def test_normalize_position(raw, expected):
+    assert normalize_position(raw) == expected
