@@ -70,3 +70,103 @@ def test_find_matchup_matches_away_side_too(matchup_json):
 def test_find_matchup_bye_week_raises(matchup_json):
     with pytest.raises(EspnError, match="week 2"):
         shapes.find_matchup(matchup_json, team_id=12, period=2)
+
+
+def test_shape_matchup_full_shape(matchup_json):
+    game = matchup_json["schedule"][0]
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+
+    assert out["week"] == 1
+    assert out["status"] == "IN_PROGRESS"
+    assert out["is_home"] is True
+
+    me = out["my_team"]
+    assert {k: me[k] for k in ("team_id", "name", "abbrev", "score", "projected", "win_probability")} == {
+        "team_id": 12,
+        "name": "My Matchup Team",
+        "abbrev": "MMT",
+        "score": 73.3,
+        "projected": 136.59,
+        "win_probability": 0.76,
+    }
+    # Starters first (by slot id), then bench, then IR — regardless of file order.
+    assert [p["name"] for p in me["roster"]] == [
+        "Home Starter One",
+        "Home Starter NoStats",
+        "Home Bench Guy",
+        "Home IR Guy",
+    ]
+    assert me["roster"][0] == {
+        "name": "Home Starter One",
+        "position": "RB",
+        "slot": "RB",
+        "pro_team": "IND",
+        "injury_status": "ACTIVE",
+        "points": 18.5,
+        "projected": 17.77,
+    }
+    # No stats[] on the player -> projected is None, points still present.
+    assert me["roster"][1]["points"] == 7.0
+    assert me["roster"][1]["projected"] is None
+    assert me["roster"][3]["slot"] == "IR"
+    assert me["roster"][3]["projected"] == 9.73
+
+    opp = out["opponent"]
+    assert opp["team_id"] == 11
+    assert opp["name"] == "Opponent Team"
+    assert opp["score"] == 58.52
+    assert opp["projected"] == 106.41
+    assert opp["win_probability"] == 0.24
+    assert [p["name"] for p in opp["roster"]] == [
+        "Away Starter One",
+        "Away Starter NoStats",
+        "Away Bench Guy",
+        "Away IR Guy",
+    ]
+    assert opp["roster"][0]["projected"] == 18.52
+
+
+def test_shape_matchup_from_away_perspective(matchup_json):
+    game = matchup_json["schedule"][0]
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=11)
+    assert out["is_home"] is False
+    assert out["my_team"]["team_id"] == 11
+    assert out["opponent"]["team_id"] == 12
+
+
+def test_shape_matchup_final_status(matchup_json):
+    game = matchup_json["schedule"][0]
+    game["winner"] = "AWAY"
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["status"] == "FINAL"
+
+
+def test_shape_matchup_upcoming_when_no_points(matchup_json):
+    game = matchup_json["schedule"][0]
+    for side in ("home", "away"):
+        game[side]["totalPointsLive"] = 0.0
+        game[side]["totalPoints"] = 0.0
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["status"] == "UPCOMING"
+
+
+def test_shape_matchup_falls_back_to_total_points_and_null_projection(matchup_json):
+    game = matchup_json["schedule"][0]
+    for key in ("totalPointsLive", "totalProjectedPoints", "totalProjectedPointsLive", "winProbability"):
+        game["home"].pop(key)
+    game["home"]["totalPoints"] = 101.234
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["my_team"]["score"] == 101.23
+    assert out["my_team"]["projected"] is None
+    assert out["my_team"]["win_probability"] is None
+
+
+def test_shape_matchup_unknown_opponent_and_missing_roster(matchup_json):
+    game = matchup_json["schedule"][0]
+    game["away"]["teamId"] = 77
+    del game["away"]["rosterForCurrentScoringPeriod"]
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["opponent"]["team_id"] == 77
+    assert out["opponent"]["name"] is None
+    assert out["opponent"]["abbrev"] is None
+    assert out["opponent"]["roster"] == []

@@ -75,3 +75,73 @@ def find_matchup(league: dict[str, Any], team_id: int, period: int) -> dict[str,
         if team_id in sides:
             return game
     raise EspnError(f"No matchup for your team in week {period} (bye week?).")
+
+
+PROJECTION_SOURCE_ID = 1  # player.stats[].statSourceId: 1 = projected, 0 = actual
+
+
+def _round(value: Any) -> float | None:
+    return None if value is None else round(float(value), 2)
+
+
+def _projected_points(player: dict[str, Any], scoring_period: int) -> float | None:
+    for stat in player.get("stats", []):
+        if (
+            stat.get("statSourceId") == PROJECTION_SOURCE_ID
+            and stat.get("scoringPeriodId") == scoring_period
+        ):
+            return _round(stat.get("appliedTotal"))
+    return None
+
+
+def _shape_matchup_player(entry: dict[str, Any], scoring_period: int) -> dict[str, Any]:
+    pool_entry = entry.get("playerPoolEntry", {})
+    row = _shape_player(entry)
+    row["points"] = _round(pool_entry.get("appliedStatTotal", 0.0))
+    row["projected"] = _projected_points(pool_entry.get("player", {}), scoring_period)
+    return row
+
+
+def _side_score(side: dict[str, Any]) -> float:
+    live = side.get("totalPointsLive")
+    return _round(live if live is not None else side.get("totalPoints", 0.0))
+
+
+def _shape_side(side: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
+    team_id = side.get("teamId")
+    team = next((t for t in league.get("teams", []) if t.get("id") == team_id), {})
+    projected = side.get("totalProjectedPointsLive", side.get("totalProjectedPoints"))
+    entries = sorted(
+        side.get("rosterForCurrentScoringPeriod", {}).get("entries", []), key=_slot_sort_key
+    )
+    scoring_period = league.get("scoringPeriodId", -1)
+    return {
+        "team_id": team_id,
+        "name": team.get("name"),
+        "abbrev": team.get("abbrev"),
+        "score": _side_score(side),
+        "projected": _round(projected),
+        "win_probability": side.get("winProbability"),
+        "roster": [_shape_matchup_player(e, scoring_period) for e in entries],
+    }
+
+
+def _matchup_status(game: dict[str, Any]) -> str:
+    if game.get("winner") in ("HOME", "AWAY", "TIE"):
+        return "FINAL"
+    if _side_score(game.get("home", {})) > 0 or _side_score(game.get("away", {})) > 0:
+        return "IN_PROGRESS"
+    return "UPCOMING"
+
+
+def shape_matchup(game: dict[str, Any], league: dict[str, Any], my_team_id: int) -> dict[str, Any]:
+    home, away = game.get("home", {}), game.get("away", {})
+    is_home = home.get("teamId") == my_team_id
+    mine, theirs = (home, away) if is_home else (away, home)
+    return {
+        "week": game.get("matchupPeriodId"),
+        "status": _matchup_status(game),
+        "is_home": is_home,
+        "my_team": _shape_side(mine, league),
+        "opponent": _shape_side(theirs, league),
+    }
