@@ -43,7 +43,6 @@ LINEUP_SLOTS: dict[int, str] = {
     19: "HC",
     20: "BENCH",
     21: "IR",
-    22: "UNKNOWN_22",
     23: "FLEX",
     24: "EDR",
     25: "RB/WR/TE",

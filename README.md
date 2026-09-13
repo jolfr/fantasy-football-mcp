@@ -8,7 +8,13 @@ MCP server giving Claude read access to your ESPN fantasy football team.
 2. Log in to fantasy.espn.com, open dev tools → Application → Cookies → `espn.com`,
    and copy `espn_s2` and `SWID` (keep the curly braces) into `.env`.
 3. Set `ESPN_LEAGUE_ID` (from your league URL: `leagueId=...`).
-4. `uv sync`
+4. Optional: `ESPN_SEASON` (defaults to the current calendar year — set it
+   explicitly during playoffs/offseason, Jan–Jul) and `ESPN_TEAM_ID` (skips
+   auto-detecting your team from your SWID).
+5. `uv sync` (requires [uv](https://docs.astral.sh/uv/) and Python 3.12+)
+
+ESPN cookies expire periodically. When they do, tools fail with a message
+mentioning "cookies" — re-copy `espn_s2` and `SWID` from your browser.
 
 ## Use with Claude Code
 
@@ -17,7 +23,7 @@ MCP server giving Claude read access to your ESPN fantasy football team.
 
 ```json
 {"mcpServers": {"fantasy": {"command": "uv",
-  "args": ["run", "--directory", "/Users/jcarroll/Repositories/fantasy-mcp", "fantasy-mcp"]}}}
+  "args": ["run", "--directory", "/path/to/fantasy-mcp", "fantasy-mcp"]}}}
 ```
 
 ## Tools

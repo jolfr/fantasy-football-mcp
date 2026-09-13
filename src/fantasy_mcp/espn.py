@@ -69,8 +69,8 @@ class EspnClient:
                 return int(team["id"])
 
         raise EspnError(
-            f"No team in league {self.settings.league_id} is owned by SWID "
-            f"{self.settings.swid}. Set ESPN_TEAM_ID explicitly."
+            f"No team in league {self.settings.league_id} is owned by the configured "
+            "ESPN_SWID. Check ESPN_SWID or set ESPN_TEAM_ID explicitly."
         )
 
     def _parse(self, response: httpx.Response) -> dict[str, Any]:

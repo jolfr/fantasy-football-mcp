@@ -60,7 +60,9 @@ Loaded from environment, with `.env` fallback via `python-dotenv`.
 | `ESPN_SEASON`    | no       | Defaults to current calendar year                  |
 | `ESPN_TEAM_ID`   | no       | If unset, resolved by matching SWID to team owners |
 
-Startup fails fast with a message naming every missing required var.
+Settings are loaded lazily on the first tool call (not at startup) so a
+missing/invalid `.env` surfaces to Claude as a readable tool error naming
+every missing required var, rather than an opaque "failed to connect".
 `.env` is gitignored; `.env.example` documents the keys.
 
 ## ESPN client (`espn.py`)

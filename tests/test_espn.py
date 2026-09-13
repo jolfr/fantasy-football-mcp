@@ -105,5 +105,7 @@ def test_find_my_team_id_uses_configured_override(settings):
 def test_find_my_team_id_no_match_raises(settings, league_json):
     respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
     stranger = dataclasses.replace(settings, swid="{NOBODY}")
-    with pytest.raises(EspnError, match="ESPN_TEAM_ID"):
+    with pytest.raises(EspnError, match="ESPN_TEAM_ID") as exc:
         EspnClient(stranger).find_my_team_id()
+    assert "NOBODY" not in str(exc.value)
+    assert "s2-cookie" not in str(exc.value)
