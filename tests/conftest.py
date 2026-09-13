@@ -32,3 +32,8 @@ def league_json() -> dict:
 @pytest.fixture
 def matchup_json() -> dict:
     return json.loads((FIXTURES / "matchup.json").read_text())
+
+
+@pytest.fixture
+def free_agents_json() -> dict:
+    return json.loads((FIXTURES / "free_agents.json").read_text())

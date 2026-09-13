@@ -1,0 +1,59 @@
+{
+  "scoringPeriodId": 1,
+  "seasonId": 2026,
+  "players": [
+    {
+      "status": "WAIVERS",
+      "onTeamId": 0,
+      "ratings": {
+        "0": {
+          "positionalRanking": 38,
+          "totalRanking": 273
+        }
+      },
+      "player": {
+        "fullName": "Waiver Back",
+        "defaultPositionId": 2,
+        "proTeamId": 25,
+        "injuryStatus": "ACTIVE",
+        "ownership": {
+          "percentOwned": 15.42,
+          "percentChange": -0.03,
+          "percentStarted": 0.22
+        },
+        "stats": [
+          {
+            "scoringPeriodId": 1,
+            "statSourceId": 0,
+            "appliedTotal": 8.0
+          },
+          {
+            "scoringPeriodId": 1,
+            "statSourceId": 1,
+            "appliedTotal": 4.5
+          },
+          {
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 8.0
+          },
+          {
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 113.78
+          }
+        ]
+      }
+    },
+    {
+      "status": "FREEAGENT",
+      "onTeamId": 0,
+      "player": {
+        "fullName": "Sparse Receiver",
+        "defaultPositionId": 3,
+        "proTeamId": 22,
+        "injuryStatus": "QUESTIONABLE"
+      }
+    }
+  ]
+}
