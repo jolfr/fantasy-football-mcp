@@ -73,13 +73,14 @@ name index without a server restart.
 ```
 src/fantasy_mcp/
 ├── espn.py      # + get_players_index()
+├── filters.py   # + player_card_filter()
 ├── players.py   # NEW: resolve_player(name, index) -> int
 ├── stats.py     # NEW: STAT_NAMES + shape_stat_line()
 ├── shapes.py    # + shape_player_card(); player_id added to existing rows
 ├── server.py    # + get_player tool; index cache
 tests/
 ├── test_players.py, test_stats.py        # NEW
-├── test_espn.py, test_shapes.py, test_server.py  # extended
+├── test_espn.py, test_filters.py, test_shapes.py, test_server.py  # extended
 └── fixtures/player_card.json, players_index.json  # NEW (trimmed real data)
 ```
 
