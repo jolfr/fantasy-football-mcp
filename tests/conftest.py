@@ -27,3 +27,8 @@ def settings() -> Settings:
 @pytest.fixture
 def league_json() -> dict:
     return json.loads((FIXTURES / "mteam_mroster.json").read_text())
+
+
+@pytest.fixture
+def matchup_json() -> dict:
+    return json.loads((FIXTURES / "matchup.json").read_text())

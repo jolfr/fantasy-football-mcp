@@ -1,0 +1,236 @@
+{
+  "id": 4242,
+  "seasonId": 2026,
+  "scoringPeriodId": 1,
+  "status": {
+    "currentMatchupPeriod": 1,
+    "latestScoringPeriod": 1
+  },
+  "settings": {
+    "name": "Test League"
+  },
+  "teams": [
+    {
+      "id": 12,
+      "name": "My Matchup Team",
+      "abbrev": "MMT",
+      "owners": [
+        "{ABC-123}"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Opponent Team",
+      "abbrev": "OPP",
+      "owners": [
+        "{DEF-456}"
+      ]
+    }
+  ],
+  "schedule": [
+    {
+      "id": 6,
+      "matchupPeriodId": 1,
+      "winner": "UNDECIDED",
+      "home": {
+        "teamId": 12,
+        "totalPoints": 0.0,
+        "totalPointsLive": 73.3,
+        "totalProjectedPoints": 113.76,
+        "totalProjectedPointsLive": 136.59,
+        "winProbability": 0.76,
+        "rosterForCurrentScoringPeriod": {
+          "entries": [
+            {
+              "lineupSlotId": 20,
+              "playerPoolEntry": {
+                "appliedStatTotal": 0.0,
+                "player": {
+                  "fullName": "Home Bench Guy",
+                  "defaultPositionId": 2,
+                  "proTeamId": 17,
+                  "injuryStatus": "OUT",
+                  "stats": [
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 1,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 0.0
+                    },
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 0,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 0.0
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "lineupSlotId": 2,
+              "playerPoolEntry": {
+                "appliedStatTotal": 18.5,
+                "player": {
+                  "fullName": "Home Starter One",
+                  "defaultPositionId": 2,
+                  "proTeamId": 11,
+                  "injuryStatus": "ACTIVE",
+                  "stats": [
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 1,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 17.77
+                    },
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 0,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 18.5
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "lineupSlotId": 21,
+              "playerPoolEntry": {
+                "appliedStatTotal": 0.0,
+                "player": {
+                  "fullName": "Home IR Guy",
+                  "defaultPositionId": 3,
+                  "proTeamId": 28,
+                  "injuryStatus": "ACTIVE",
+                  "stats": [
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 1,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 9.73
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "lineupSlotId": 4,
+              "playerPoolEntry": {
+                "appliedStatTotal": 7.0,
+                "player": {
+                  "fullName": "Home Starter NoStats",
+                  "defaultPositionId": 3,
+                  "proTeamId": 18,
+                  "injuryStatus": "ACTIVE"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "away": {
+        "teamId": 11,
+        "totalPoints": 0.0,
+        "totalPointsLive": 58.52,
+        "totalProjectedPoints": 113.35,
+        "totalProjectedPointsLive": 106.41,
+        "winProbability": 0.24,
+        "rosterForCurrentScoringPeriod": {
+          "entries": [
+            {
+              "lineupSlotId": 20,
+              "playerPoolEntry": {
+                "appliedStatTotal": 0.0,
+                "player": {
+                  "fullName": "Away Bench Guy",
+                  "defaultPositionId": 2,
+                  "proTeamId": 16,
+                  "injuryStatus": "ACTIVE",
+                  "stats": [
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 1,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 10.29
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "lineupSlotId": 2,
+              "playerPoolEntry": {
+                "appliedStatTotal": 13.8,
+                "player": {
+                  "fullName": "Away Starter One",
+                  "defaultPositionId": 2,
+                  "proTeamId": 25,
+                  "injuryStatus": "ACTIVE",
+                  "stats": [
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 0,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 13.8
+                    },
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 1,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 18.52
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "lineupSlotId": 21,
+              "playerPoolEntry": {
+                "appliedStatTotal": 0.0,
+                "player": {
+                  "fullName": "Away IR Guy",
+                  "defaultPositionId": 2,
+                  "proTeamId": 7,
+                  "injuryStatus": "ACTIVE",
+                  "stats": [
+                    {
+                      "scoringPeriodId": 1,
+                      "statSourceId": 1,
+                      "statSplitTypeId": 1,
+                      "appliedTotal": 8.47
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "lineupSlotId": 4,
+              "playerPoolEntry": {
+                "appliedStatTotal": 5.6,
+                "player": {
+                  "fullName": "Away Starter NoStats",
+                  "defaultPositionId": 3,
+                  "proTeamId": 17,
+                  "injuryStatus": "INJURY_RESERVE"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 999,
+      "matchupPeriodId": 2,
+      "winner": "UNDECIDED",
+      "home": {
+        "teamId": 1,
+        "totalPoints": 0.0
+      },
+      "away": {
+        "teamId": 2,
+        "totalPoints": 0.0
+      }
+    }
+  ]
+}
