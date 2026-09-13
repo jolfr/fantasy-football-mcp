@@ -73,6 +73,12 @@ SORTS = ("owned", "projected")
 MAX_LIMIT = 50
 
 
+class FilterError(ValueError): ...
+
+
+def normalize_position(position: str) -> str:  # upper-case, "/" -> "_"
+
+
 def free_agent_filter(
     *, season: int, position: str | None, limit: int, sort: str
 ) -> dict[str, Any]:
@@ -81,10 +87,10 @@ def free_agent_filter(
 Behavior:
 - `position` is upper-cased with `/` normalized to `_` (so both `D_ST` and the
   `D/ST` spelling emitted by other tools work) and looked up in
-  `POSITION_SLOTS`; unknown → `ValueError` listing valid values. `None` → no
+  `POSITION_SLOTS`; unknown → `FilterError` (a `ValueError` subclass) listing valid values. `None` → no
   `filterSlotIds`.
-- `limit` outside `1..MAX_LIMIT` → `ValueError`.
-- `sort` not in `SORTS` → `ValueError`.
+- `limit` outside `1..MAX_LIMIT` → `FilterError`.
+- `sort` not in `SORTS` → `FilterError`.
 - Returns
   ```python
   {"players": {
@@ -162,19 +168,17 @@ def get_free_agents(
         )
         league = client.get("kona_player_info", "mStatus", fantasy_filter=fantasy_filter)
         period = league.get("scoringPeriodId")
-        players = [
-            shape_free_agent(e, period, league.get("seasonId"))
-            for e in league.get("players", [])
-        ]
+        if period is None:
+            raise EspnError("ESPN response is missing scoringPeriodId.")
+        season = league.get("seasonId", client.settings.season)
+        players = [shape_free_agent(e, period, season) for e in league.get("players", [])]
         return {
             "week": period,
-            "position": position.upper() if position else None,
+            "position": normalize_position(position) if position else None,
             "sort": sort,
             "players": players,
         }
-    except ValueError as e:
-        raise ToolError(str(e)) from e
-    except (EspnError, ConfigError) as e:
+    except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 ```
 
@@ -191,7 +195,7 @@ list four tools; keep "no standings, transaction, or past-week data".
 
 ## Errors
 
-Argument errors (`ValueError` from `filters.py`) and ESPN errors both
+Argument errors (`FilterError` from `filters.py`) and ESPN errors both
 surface as `ToolError` with the original message. Argument messages must
 name the valid values, e.g. `position must be one of QB, RB, WR, TE, K,
 D_ST (got 'FLEX')`.
@@ -199,8 +203,10 @@ D_ST (got 'FLEX')`.
 ## Testing
 
 `tests/fixtures/free_agents.json`: real `kona_player_info` response trimmed
-to `{"scoringPeriodId": 1, "players": [two entries]}` — one `WAIVERS` RB
-with full `ownership`, `ratings`, and four `stats` (week actual/proj,
+to `{"scoringPeriodId": 1, "seasonId": 2026, "players": [two entries]}` — one
+`WAIVERS` RB with full `ownership`, `ratings`, four current-season `stats`
+(week actual/proj, season actual/proj) plus a prior-season decoy listed
+first — i.e. four real `stats` (week actual/proj,
 season actual/proj), one `FREEAGENT` WR with no `stats`, no `ratings`, no
 `ownership`. Names replaced with placeholders.
 
@@ -210,7 +216,7 @@ season actual/proj), one `FREEAGENT` WR with no `stats`, no `ratings`, no
 - `D_ST` → 16
 - sort "projected" → `sortAppliedStatTotal` with value `"102026"` and no
   `sortPercOwned`
-- invalid position / sort / limit 0 / limit 51 → `ValueError` whose message
+- invalid position / sort / limit 0 / limit 51 → `FilterError` whose message
   contains the valid values
 
 `tests/test_shapes.py`:
