@@ -57,3 +57,25 @@ async def test_tool_surfaces_bad_configured_team_id(settings, league_json):
                 await c.call_tool("get_my_team", {})
     finally:
         server.set_client_for_tests(None)
+
+
+@respx.mock
+async def test_get_matchup_tool(client, matchup_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=matchup_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_matchup", {})
+    assert result.data["week"] == 1
+    assert result.data["my_team"]["team_id"] == 12
+    assert result.data["opponent"]["team_id"] == 11
+    assert len(result.data["my_team"]["roster"]) == 4
+    views = route.calls.last.request.url.params.get_list("view")
+    assert views == ["mMatchup", "mMatchupScore", "mTeam"]
+
+
+@respx.mock
+async def test_get_matchup_tool_bye_week_is_tool_error(client, matchup_json):
+    matchup_json["status"]["currentMatchupPeriod"] = 2
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=matchup_json))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="week 2"):
+            await c.call_tool("get_matchup", {})
