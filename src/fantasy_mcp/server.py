@@ -11,10 +11,25 @@ from fantasy_mcp import ids
 from fantasy_mcp.config import ConfigError, Settings, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
 
-mcp = FastMCP(
-    "fantasy-mcp",
-    instructions="Read-only access to the user's ESPN fantasy football league.",
-)
+INSTRUCTIONS = """\
+Read-only access to the user's ESPN fantasy football league.
+
+Use these tools for any question about the user's team or league rather than
+answering from memory. Call get_my_team before giving lineup, start/sit, or
+roster advice, and base the advice on the roster and injury statuses it returns.
+
+Only whoami and get_my_team exist. There is no matchup, standings, free agent,
+or transaction data yet -- say so instead of inventing it.
+
+Nothing here can modify the team. If the user asks to make a move, describe
+what to do and let them do it on ESPN.
+
+If a tool fails with a message mentioning "cookies", the user's ESPN session
+cookies have expired: tell them to re-copy espn_s2 and SWID from their browser
+into the server's .env file.
+"""
+
+mcp = FastMCP("fantasy-mcp", instructions=INSTRUCTIONS)
 
 _client: EspnClient | None = None
 
