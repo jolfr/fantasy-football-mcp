@@ -51,6 +51,28 @@ class EspnClient:
             raise EspnError(f"Could not reach ESPN: {type(e).__name__}") from e
         return self._parse(response)
 
+    def find_my_team_id(self, league: dict[str, Any] | None = None) -> int:
+        """Return the configured team id, or the team whose owners include our SWID.
+
+        ``league`` may be passed to reuse an already-fetched ``mTeam`` payload.
+        """
+        if self.settings.team_id is not None:
+            return self.settings.team_id
+
+        if league is None:
+            league = self.get("mTeam")
+
+        swid = self.settings.swid.lower()
+        for team in league.get("teams", []):
+            owners = [o.lower() for o in team.get("owners", [])]
+            if swid in owners:
+                return int(team["id"])
+
+        raise EspnError(
+            f"No team in league {self.settings.league_id} is owned by SWID "
+            f"{self.settings.swid}. Set ESPN_TEAM_ID explicitly."
+        )
+
     def _parse(self, response: httpx.Response) -> dict[str, Any]:
         status = response.status_code
         if status in (401, 403):

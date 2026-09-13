@@ -1,3 +1,4 @@
+import dataclasses
 import json
 
 import httpx
@@ -84,3 +85,25 @@ def test_transport_error_raises_espn_error(settings):
     respx.get(LEAGUE_URL).mock(side_effect=httpx.ConnectTimeout("timed out"))
     with pytest.raises(EspnError, match="Could not reach ESPN"):
         EspnClient(settings).get("mTeam")
+
+
+@respx.mock
+def test_find_my_team_id_matches_swid_case_insensitively(settings, league_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    assert EspnClient(settings).find_my_team_id() == 3
+
+
+@respx.mock
+def test_find_my_team_id_uses_configured_override(settings):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    configured = dataclasses.replace(settings, team_id=9)
+    assert EspnClient(configured).find_my_team_id() == 9
+    assert not route.called
+
+
+@respx.mock
+def test_find_my_team_id_no_match_raises(settings, league_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    stranger = dataclasses.replace(settings, swid="{NOBODY}")
+    with pytest.raises(EspnError, match="ESPN_TEAM_ID"):
+        EspnClient(stranger).find_my_team_id()
