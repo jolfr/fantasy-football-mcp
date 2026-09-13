@@ -42,8 +42,10 @@ def test_get_sends_fantasy_filter_header(settings, league_json):
 @pytest.mark.parametrize("status", [401, 403])
 def test_auth_status_raises_auth_error(settings, status):
     respx.get(LEAGUE_URL).mock(return_value=httpx.Response(status, text="nope"))
-    with pytest.raises(EspnAuthError, match="cookies"):
+    with pytest.raises(EspnAuthError, match="cookies") as exc:
         EspnClient(settings).get("mTeam")
+    assert "s2-cookie" not in str(exc.value)
+    assert "ABC-123" not in str(exc.value)
 
 
 @respx.mock
@@ -51,15 +53,19 @@ def test_html_body_raises_auth_error(settings):
     respx.get(LEAGUE_URL).mock(
         return_value=httpx.Response(200, text="<html>login</html>", headers={"content-type": "text/html"})
     )
-    with pytest.raises(EspnAuthError, match="cookies"):
+    with pytest.raises(EspnAuthError, match="cookies") as exc:
         EspnClient(settings).get("mTeam")
+    assert "s2-cookie" not in str(exc.value)
+    assert "ABC-123" not in str(exc.value)
 
 
 @respx.mock
 def test_404_raises_not_found(settings):
     respx.get(LEAGUE_URL).mock(return_value=httpx.Response(404, text="{}"))
-    with pytest.raises(EspnNotFoundError, match="4242"):
+    with pytest.raises(EspnNotFoundError, match="4242") as exc:
         EspnClient(settings).get("mTeam")
+    assert "s2-cookie" not in str(exc.value)
+    assert "ABC-123" not in str(exc.value)
 
 
 @respx.mock
@@ -69,3 +75,12 @@ def test_other_status_raises_espn_error(settings):
         EspnClient(settings).get("mTeam")
     assert "boom" in str(exc.value)
     assert not isinstance(exc.value, (EspnAuthError, EspnNotFoundError))
+    assert "s2-cookie" not in str(exc.value)
+    assert "ABC-123" not in str(exc.value)
+
+
+@respx.mock
+def test_transport_error_raises_espn_error(settings):
+    respx.get(LEAGUE_URL).mock(side_effect=httpx.ConnectTimeout("timed out"))
+    with pytest.raises(EspnError, match="Could not reach ESPN"):
+        EspnClient(settings).get("mTeam")

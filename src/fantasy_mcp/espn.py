@@ -39,13 +39,16 @@ class EspnClient:
         if fantasy_filter is not None:
             headers["X-Fantasy-Filter"] = json.dumps(fantasy_filter)
 
-        response = httpx.get(
-            self.league_url,
-            params=[("view", v) for v in views],
-            cookies=self._cookies,
-            headers=headers,
-            timeout=TIMEOUT_SECONDS,
-        )
+        try:
+            response = httpx.get(
+                self.league_url,
+                params=[("view", v) for v in views],
+                cookies=self._cookies,
+                headers=headers,
+                timeout=TIMEOUT_SECONDS,
+            )
+        except httpx.RequestError as e:
+            raise EspnError(f"Could not reach ESPN: {type(e).__name__}") from e
         return self._parse(response)
 
     def _parse(self, response: httpx.Response) -> dict[str, Any]:

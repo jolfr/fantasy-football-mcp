@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 
@@ -15,8 +15,8 @@ class ConfigError(Exception):
 
 @dataclass(frozen=True)
 class Settings:
-    espn_s2: str
-    swid: str
+    espn_s2: str = field(repr=False)
+    swid: str = field(repr=False)
     league_id: int
     season: int
     team_id: int | None

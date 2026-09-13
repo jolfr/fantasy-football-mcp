@@ -52,3 +52,10 @@ def test_non_integer_league_id(monkeypatch):
     _set(monkeypatch, ESPN_LEAGUE_ID="abc")
     with pytest.raises(ConfigError, match="ESPN_LEAGUE_ID"):
         load_settings(load_dotenv_file=False)
+
+
+def test_repr_hides_secrets(monkeypatch):
+    _set(monkeypatch)
+    r = repr(load_settings(load_dotenv_file=False))
+    assert "s2-cookie" not in r
+    assert "ABC-123" not in r
