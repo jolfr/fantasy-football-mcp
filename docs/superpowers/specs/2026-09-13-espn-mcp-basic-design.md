@@ -72,10 +72,10 @@ base_url = https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl
 
 `EspnClient(settings)`:
 
-- `get(*views: str, filter: dict | None = None) -> dict`
+- `get(*views: str, fantasy_filter: dict | None = None) -> dict`
   - single `httpx.get(base_url, params=[("view", v) for v in views],
     cookies={"espn_s2": ..., "SWID": ...}, headers=...)`
-  - if `filter` given, send as `X-Fantasy-Filter: <json>` header
+  - if `fantasy_filter` given, send as `X-Fantasy-Filter: <json>` header
   - timeout 15s
 - `find_my_team_id() -> int`
   - returns `ESPN_TEAM_ID` if configured
@@ -141,7 +141,7 @@ or two teams, SWIDs and names scrubbed.
 
 Cases:
 - cookies attached to request; `view` params repeated correctly
-- `X-Fantasy-Filter` header sent when `filter` given
+- `X-Fantasy-Filter` header sent when `fantasy_filter` given
 - `find_my_team_id`: env override; SWID match; no match -> error
 - 401/403 -> `EspnAuthError`; 200 HTML -> `EspnAuthError`; 404 ->
   `EspnNotFoundError`; 500 -> `EspnError`
