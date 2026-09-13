@@ -77,8 +77,10 @@ def free_agent_filter(
 ```
 
 Behavior:
-- `position` is upper-cased and looked up in `POSITION_SLOTS`; unknown →
-  `ValueError` listing valid values. `None` → no `filterSlotIds`.
+- `position` is upper-cased with `/` normalized to `_` (so both `D_ST` and the
+  `D/ST` spelling emitted by other tools work) and looked up in
+  `POSITION_SLOTS`; unknown → `ValueError` listing valid values. `None` → no
+  `filterSlotIds`.
 - `limit` outside `1..MAX_LIMIT` → `ValueError`.
 - `sort` not in `SORTS` → `ValueError`.
 - Returns

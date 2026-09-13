@@ -27,6 +27,11 @@ def test_defense_position_maps_to_slot_16():
     assert out["players"]["filterSlotIds"] == {"value": [16]}
 
 
+def test_defense_accepts_slash_spelling_from_other_tools():
+    out = free_agent_filter(season=2026, position="d/st", limit=5, sort="owned")
+    assert out["players"]["filterSlotIds"] == {"value": [16]}
+
+
 def test_projected_sort_uses_season_stat_id():
     out = free_agent_filter(season=2026, position=None, limit=10, sort="projected")
     assert out["players"]["sortAppliedStatTotal"] == {
@@ -56,3 +61,16 @@ def test_invalid_sort_lists_valid_values():
 def test_limit_out_of_range(limit):
     with pytest.raises(ValueError, match=f"limit must be between 1 and {MAX_LIMIT}"):
         free_agent_filter(season=2026, position=None, limit=limit, sort="owned")
+
+
+def test_each_call_returns_independent_dicts():
+    a = free_agent_filter(season=2026, position=None, limit=10, sort="owned")
+    b = free_agent_filter(season=2026, position=None, limit=10, sort="owned")
+    a["players"]["filterStatus"]["value"].append("ONTEAM")
+    assert b["players"]["filterStatus"]["value"] == ["FREEAGENT", "WAIVERS"]
+
+
+@pytest.mark.parametrize("limit", [1, MAX_LIMIT])
+def test_limit_boundaries_are_valid(limit):
+    out = free_agent_filter(season=2026, position=None, limit=limit, sort="owned")
+    assert out["players"]["limit"] == limit

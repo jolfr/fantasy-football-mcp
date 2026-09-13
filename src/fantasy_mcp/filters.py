@@ -16,8 +16,6 @@ POSITION_SLOTS: dict[str, int] = {
 SORTS = ("owned", "projected")
 MAX_LIMIT = 50
 
-_AVAILABLE = {"value": ["FREEAGENT", "WAIVERS"]}
-
 
 def free_agent_filter(
     *, season: int, position: str | None, limit: int, sort: str
@@ -28,10 +26,13 @@ def free_agent_filter(
     if sort not in SORTS:
         raise ValueError(f"sort must be one of {', '.join(SORTS)} (got {sort!r}).")
 
-    players: dict[str, Any] = {"filterStatus": _AVAILABLE, "limit": limit}
+    players: dict[str, Any] = {
+        "filterStatus": {"value": ["FREEAGENT", "WAIVERS"]},
+        "limit": limit,
+    }
 
     if position is not None:
-        slot = POSITION_SLOTS.get(position.upper())
+        slot = POSITION_SLOTS.get(position.upper().replace("/", "_"))
         if slot is None:
             raise ValueError(
                 f"position must be one of {', '.join(POSITION_SLOTS)} (got {position!r})."
