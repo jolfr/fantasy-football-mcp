@@ -1,0 +1,52 @@
+{
+  "id": 4242,
+  "seasonId": 2026,
+  "settings": {"name": "Test League"},
+  "members": [
+    {"id": "{ABC-123}", "displayName": "me"},
+    {"id": "{DEF-456}", "displayName": "rival"}
+  ],
+  "teams": [
+    {
+      "id": 3,
+      "name": "My Squad",
+      "abbrev": "MYS",
+      "owners": ["{abc-123}"],
+      "record": {
+        "overall": {"wins": 1, "losses": 0, "ties": 0, "pointsFor": 128.4, "pointsAgainst": 101.2}
+      },
+      "roster": {
+        "entries": [
+          {
+            "lineupSlotId": 20,
+            "playerPoolEntry": {
+              "player": {"fullName": "Bench Guy", "defaultPositionId": 2, "proTeamId": 6, "injuryStatus": "QUESTIONABLE"}
+            }
+          },
+          {
+            "lineupSlotId": 0,
+            "playerPoolEntry": {
+              "player": {"fullName": "Josh Allen", "defaultPositionId": 1, "proTeamId": 2, "injuryStatus": "ACTIVE"}
+            }
+          },
+          {
+            "lineupSlotId": 23,
+            "playerPoolEntry": {
+              "player": {"fullName": "Flex Player", "defaultPositionId": 3, "proTeamId": 99, "injuryStatus": "ACTIVE"}
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "name": "Rival Team",
+      "abbrev": "RIV",
+      "owners": ["{DEF-456}"],
+      "record": {
+        "overall": {"wins": 0, "losses": 1, "ties": 0, "pointsFor": 101.2, "pointsAgainst": 128.4}
+      },
+      "roster": {"entries": []}
+    }
+  ]
+}
