@@ -8,7 +8,11 @@ from fantasy_mcp import ids
 from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
 
-PROJECTION_SOURCE_ID = 1  # player.stats[].statSourceId: 1 = projected, 0 = actual
+# player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
+# and statSourceId (0 = actual, 1 = projected).
+SEASON_PERIOD = 0
+ACTUAL_SOURCE_ID = 0
+PROJECTION_SOURCE_ID = 1
 
 
 def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
@@ -90,14 +94,16 @@ def _round(value: Any) -> float | None:
     return None if value is None else round(float(value), 2)
 
 
-def _projected_points(player: dict[str, Any], scoring_period: int) -> float | None:
-    for stat in player.get("stats", []):
-        if (
-            stat.get("statSourceId") == PROJECTION_SOURCE_ID
-            and stat.get("scoringPeriodId") == scoring_period
-        ):
+def _stat(player: dict[str, Any], *, period: int, source: int) -> float | None:
+    """appliedTotal of the stats[] item for ``period``/``source``, rounded; None if absent."""
+    for stat in player.get("stats") or []:
+        if stat.get("scoringPeriodId") == period and stat.get("statSourceId") == source:
             return _round(stat.get("appliedTotal"))
     return None
+
+
+def _projected_points(player: dict[str, Any], scoring_period: int) -> float | None:
+    return _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID)
 
 
 def _shape_matchup_player(entry: dict[str, Any], scoring_period: int) -> dict[str, Any]:
