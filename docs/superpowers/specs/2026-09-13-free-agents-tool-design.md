@@ -26,7 +26,10 @@ beyond the `percent_change` field, opponent/matchup ratings.
 
 - View `kona_player_info` on the league endpoint with header
   `X-Fantasy-Filter: {"players": {...}}` returns `{"players": [...],
-  "positionAgainstOpponent": {...}}`. Ignore `positionAgainstOpponent`.
+  "positionAgainstOpponent": {...}}` and nothing else — no top-level
+  `scoringPeriodId`. Adding the `mStatus` view (`?view=kona_player_info&
+  view=mStatus`) keeps `players` and adds `scoringPeriodId`, `status`, etc.
+  Ignore `positionAgainstOpponent`.
 - Filter keys that work:
   - `filterStatus: {"value": ["FREEAGENT", "WAIVERS"]}`
   - `filterSlotIds: {"value": [<lineupSlotId>]}` — QB 0, RB 2, WR 4, TE 6,
@@ -148,7 +151,7 @@ def get_free_agents(
         fantasy_filter = free_agent_filter(
             season=client.settings.season, position=position, limit=limit, sort=sort
         )
-        league = client.get("kona_player_info", fantasy_filter=fantasy_filter)
+        league = client.get("kona_player_info", "mStatus", fantasy_filter=fantasy_filter)
         period = league.get("scoringPeriodId")
         players = [shape_free_agent(e, period) for e in league.get("players", [])]
         return {
@@ -173,11 +176,6 @@ projections are not available.
 
 `INSTRUCTIONS`: add "Use get_free_agents for pickup/waiver questions" and
 list four tools; keep "no standings, transaction, or past-week data".
-
-**Note on `scoringPeriodId`:** verify during the live test that
-`kona_player_info` responses include the top-level `scoringPeriodId` (the
-league views do). If absent, request `"kona_player_info", "mSettings"`
-instead — both views in one call — and note it in the spec.
 
 ## Errors
 
@@ -210,7 +208,8 @@ season actual/proj), one `FREEAGENT` WR with no `stats`, no `ratings`, no
 
 `tests/test_server.py`:
 - `get_free_agents({"position": "RB", "limit": 5, "sort": "projected"})`
-  via in-memory client: response shape; request `view == ["kona_player_info"]`;
+  via in-memory client: response shape; request `view == ["kona_player_info",
+  "mStatus"]`;
   `X-Fantasy-Filter` header parses to the expected filter dict
 - invalid position → `ToolError` matching "position must be one of"
 - default args → header has `sortPercOwned`, no `filterSlotIds`
