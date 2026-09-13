@@ -104,7 +104,7 @@ def whoami() -> dict[str, Any]:
     """
     try:
         client = _get_client()
-        league = client.get("mTeam")
+        league = client.get("mTeam", "mSettings")
         team_id = client.find_my_team_id(league)
         return shape_whoami(league, team_id, client.settings)
     except (EspnError, ConfigError) as e:

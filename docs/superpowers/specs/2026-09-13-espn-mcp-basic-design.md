@@ -102,7 +102,7 @@ Three `dict[int, str]` tables: `POSITIONS` (defaultPositionId),
 ## Tools (`server.py`)
 
 ### `whoami()`
-Calls `get("mTeam")`. Returns:
+Calls `get("mTeam", "mSettings")` (league name is only present in `mSettings`). Returns:
 ```json
 {"league_id": 123, "season": 2026, "league_name": "...",
  "team_id": 3, "team_name": "..."}

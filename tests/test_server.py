@@ -73,11 +73,13 @@ def test_team_by_id_missing_raises(league_json):
 
 @respx.mock
 async def test_whoami_tool(client, league_json):
-    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
     async with Client(server.mcp) as c:
         result = await c.call_tool("whoami", {})
     assert result.data["team_name"] == "My Squad"
     assert result.data["league_name"] == "Test League"
+    # League name only comes back with mSettings; mTeam alone has no "settings" key.
+    assert route.calls.last.request.url.params.get_list("view") == ["mTeam", "mSettings"]
 
 
 @respx.mock
