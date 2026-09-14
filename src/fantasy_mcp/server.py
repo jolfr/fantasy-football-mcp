@@ -56,7 +56,8 @@ repeatedly. Use get_standings for records, rankings, the playoff picture, or
 waiver order. Use get_team for another manager's roster (trade targets,
 positional depth); get_standings lists team ids. Only whoami,
 get_league_settings, get_standings, get_my_team, get_team, get_matchup,
-get_projections, get_free_agents, get_player, and compare_players exist. There is no transaction data yet -- say so instead of inventing it.
+get_projections, get_free_agents, get_player, and compare_players exist.
+There is no transaction data yet -- say so instead of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
