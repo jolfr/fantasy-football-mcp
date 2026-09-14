@@ -11,7 +11,8 @@ from fastmcp.apps import PrefabAppConfig, ResourceCSP
 from fastmcp.exceptions import ToolError
 from fastmcp.tools import ToolResult
 
-from fantasy_mcp.cards import player_card
+from fantasy_mcp import settings_store
+from fantasy_mcp.cards import player_card, setup_card
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
 from fantasy_mcp.filters import (
@@ -56,7 +57,8 @@ repeatedly. Use get_standings for records, rankings, the playoff picture, or
 waiver order. Use get_team for another manager's roster (trade targets,
 positional depth); get_standings lists team ids. Only whoami,
 get_league_settings, get_standings, get_my_team, get_team, get_matchup,
-get_projections, get_free_agents, get_player, and compare_players exist.
+get_projections, get_free_agents, get_player, compare_players, setup, and
+save_settings exist.
 There is no transaction data yet -- say so instead of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
@@ -69,10 +71,13 @@ conversation is enough.
 Nothing here can modify the team. If the user asks to make a move, describe
 what to do and let them do it on ESPN.
 
-If a tool fails with a message mentioning "cookies", the user's ESPN session
-cookies have expired: tell them to re-copy espn_s2 and SWID from their browser
-into wherever the server is configured: the extension's settings in Claude
-Desktop (Settings → Extensions → ESPN Fantasy Football), or the .env file for
+If a tool says the league is not configured, or the user asks to set up,
+connect, or change their league or cookies, call setup and ask them to fill
+in the card -- do not ask them to paste cookies into the chat. If a tool
+fails with a message mentioning "cookies", the ESPN session cookies have
+expired: call setup; the card explains where to copy fresh ones. Clients
+that cannot show cards: the values go in the extension's settings in Claude
+Desktop (Settings → Extensions → ESPN Fantasy Football) or the .env file for
 a local checkout.
 """
 
@@ -94,6 +99,11 @@ def _get_client() -> EspnClient:
 def set_client_for_tests(client: EspnClient | None) -> None:
     global _client
     _client = client
+
+
+def _reset_client() -> None:
+    global _client
+    _client = None
 
 
 _players_index: list[dict[str, Any]] | None = None
@@ -150,6 +160,60 @@ def whoami() -> dict[str, Any]:
         return shape_whoami(league, team_id, client.settings)
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
+
+
+@mcp.tool(app=True)
+def setup() -> ToolResult:
+    """Show the in-chat setup card for connecting the user's ESPN league.
+
+    Call this when any tool reports the league is not configured, or when the
+    user asks to set up, connect, or change their league or cookies. The card
+    explains where to find the espn_s2 and SWID cookies, has one input per
+    value, and saves + verifies them via save_settings. Ask the user to fill in
+    the card; do not ask them to paste cookies into the chat. If this client
+    cannot display cards, tell the user to set the values in the extension's
+    settings in Claude Desktop or in .env for a local checkout (see README).
+    """
+    saved = settings_store.load()
+    current = {"league_id": saved["ESPN_LEAGUE_ID"]} if saved.get("ESPN_LEAGUE_ID") else {}
+    return ToolResult(
+        content="Setup card shown. Ask the user to fill it in and press Save & test.",
+        structured_content=setup_card(current),
+    )
+
+
+@mcp.tool
+def save_settings(espn_s2: str, swid: str, league_id: str) -> dict[str, Any]:
+    """Save ESPN credentials and league id, then verify them against ESPN.
+
+    Normally called by the setup card's Save & test button; you may call it
+    directly if the user pasted values into the chat. Returns {"ok": true,
+    "league_name", "team_name", "season"} on success, or {"ok": false,
+    "error": "..."} with a message to relay. Values are stored in a per-user
+    config file that takes precedence over the extension's settings form.
+    """
+    espn_s2, swid, league_id = espn_s2.strip(), swid.strip(), league_id.strip()
+    if not (swid.startswith("{") and swid.endswith("}")):
+        return {"ok": False, "error": "SWID must include the curly braces, e.g. {1234ABCD-...}."}
+    if not league_id.isdigit():
+        return {"ok": False, "error": f"League ID must be a number, got {league_id!r}."}
+    if not espn_s2:
+        return {"ok": False, "error": "espn_s2 is empty."}
+    settings_store.save({"ESPN_S2": espn_s2, "ESPN_SWID": swid, "ESPN_LEAGUE_ID": league_id})
+    _reset_client()
+    try:
+        client = _get_client()
+        league = client.get("mTeam", "mSettings")
+        team_id = client.find_my_team_id(league)
+        who = shape_whoami(league, team_id, client.settings)
+    except (EspnError, ConfigError) as e:
+        return {"ok": False, "error": str(e)}
+    return {
+        "ok": True,
+        "league_name": who["league_name"],
+        "team_name": who["team_name"],
+        "season": who["season"],
+    }
 
 
 @mcp.tool

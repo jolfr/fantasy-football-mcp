@@ -234,7 +234,7 @@ async def test_get_player_is_registered_as_an_app(client):
         tools = await c.list_tools()
     tool = next(t for t in tools if t.name == "get_player")
     assert tool.meta["ui"]["resourceUri"].startswith("ui://prefab/")
-    assert all("ui" not in (t.meta or {}) for t in tools if t.name != "get_player")
+    assert all("ui" not in (t.meta or {}) for t in tools if t.name not in ("get_player", "setup"))
 
 
 @respx.mock
@@ -479,8 +479,82 @@ async def test_get_my_team_rows_now_include_projected(client, league_json):
     assert next(p for p in result.data["roster"] if p["name"] == "Josh Allen")["projected"] == 22.4
 
 
-async def test_ten_tools_registered(client):
+async def test_twelve_tools_registered(client):
     async with Client(server.mcp) as c:
         names = sorted(t.name for t in await c.list_tools())
-    assert names == ["compare_players", "get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
-                     "get_player", "get_projections", "get_standings", "get_team", "whoami"]
+    assert names == ["compare_players", "get_free_agents", "get_league_settings", "get_matchup",
+                     "get_my_team", "get_player", "get_projections", "get_standings", "get_team",
+                     "save_settings", "setup", "whoami"]
+
+
+async def test_setup_tool_returns_card_without_cookies(isolated_config_path):
+    from fantasy_mcp import settings_store
+
+    settings_store.save({"ESPN_S2": "secret-s2", "ESPN_SWID": "{SECRET}", "ESPN_LEAGUE_ID": "4242"})
+    async with Client(server.mcp) as c:
+        tool = next(t for t in await c.list_tools() if t.name == "setup")
+        assert tool.meta["ui"]["resourceUri"].startswith("ui://prefab/")
+        result = await c.call_tool("setup", {})
+    assert "setup card" in result.content[0].text.lower()
+    dumped = json.dumps(result.structured_content)
+    assert "secret-s2" not in dumped and "{SECRET}" not in dumped
+    assert '"4242"' in dumped  # league id is pre-filled
+
+
+async def test_unconfigured_tool_points_at_setup(monkeypatch):
+    monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
+    for key in ("ESPN_S2", "ESPN_SWID", "ESPN_LEAGUE_ID"):
+        monkeypatch.delenv(key, raising=False)
+    server.set_client_for_tests(None)
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="setup"):
+            await c.call_tool("get_my_team", {})
+
+
+@respx.mock
+async def test_save_settings_writes_file_and_verifies(league_json, isolated_config_path, monkeypatch):
+    monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
+    monkeypatch.setenv("ESPN_SEASON", "2026")  # LEAGUE_URL is the 2026 endpoint
+    server.set_client_for_tests(None)
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool(
+            "save_settings", {"espn_s2": " s2-cookie ", "swid": "{ABC-123}", "league_id": "4242"}
+        )
+    assert result.data == {"ok": True, "league_name": "Test League", "team_name": "My Squad", "season": 2026}
+    saved = json.loads(isolated_config_path.read_text())
+    assert saved == {"ESPN_S2": "s2-cookie", "ESPN_SWID": "{ABC-123}", "ESPN_LEAGUE_ID": "4242"}
+
+
+@respx.mock
+async def test_save_settings_reports_bad_cookies_but_keeps_values(isolated_config_path, monkeypatch):
+    monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
+    monkeypatch.setenv("ESPN_SEASON", "2026")
+    server.set_client_for_tests(None)
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(401))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool(
+            "save_settings", {"espn_s2": "bad", "swid": "{ABC-123}", "league_id": "4242"}
+        )
+    assert result.data["ok"] is False
+    assert "cookies" in result.data["error"]
+    assert isolated_config_path.exists()
+
+
+async def test_save_settings_rejects_swid_without_braces(isolated_config_path):
+    async with Client(server.mcp) as c:
+        result = await c.call_tool(
+            "save_settings", {"espn_s2": "s2", "swid": "ABC-123", "league_id": "4242"}
+        )
+    assert result.data["ok"] is False
+    assert "curly braces" in result.data["error"]
+    assert not isolated_config_path.exists()
+
+
+async def test_save_settings_rejects_non_numeric_league_id(isolated_config_path):
+    async with Client(server.mcp) as c:
+        result = await c.call_tool(
+            "save_settings", {"espn_s2": "s2", "swid": "{ABC-123}", "league_id": "abc"}
+        )
+    assert result.data["ok"] is False
+    assert "League ID" in result.data["error"]

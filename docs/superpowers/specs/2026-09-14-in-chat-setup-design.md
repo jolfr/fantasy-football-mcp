@@ -73,18 +73,17 @@ matchup, free agents, players, and league scoring rules. Set up in chat."
   cards, they can put the values in `.env` (see README)." Structured content
   = `setup_card(current)` where `current` has only `league_id` (never
   cookies).
-- `save_settings(espn_s2: str, swid: str, league_id: int, season: int | None = None,
-  team_id: int | None = None) -> dict`: strip inputs; validate SWID has
-  `{...}` braces; `settings_store.save(...)`; reset `_client`; call the
-  `whoami` lookup. Returns `{"ok": True, "league_name", "team_name",
-  "season"}` or `{"ok": False, "error": <existing auth/not-found wording>}`.
-  Never raises for user-fixable problems, so the card can render the result.
-  Values are saved before the network check so a retry after a typo keeps
-  the good fields.
-- Unconfigured calls: `_get_client()` raising `ConfigError` is caught by a
-  helper `_setup_result()` used in every tool's `except` clause, returning
-  the same `ToolResult` as `setup`. Tools that return `dict` today change
-  their return annotation to `dict | ToolResult`.
+- `save_settings(espn_s2: str, swid: str, league_id: str) -> dict`: strip
+  inputs; validate SWID has `{...}` braces; `settings_store.save(...)`; reset
+  `_client`; call the `whoami` lookup. Returns `{"ok": True, "league_name",
+  "team_name", "season"}` or `{"ok": False, "error": <existing auth/not-found
+  wording>}`. Never raises for user-fixable problems, so the card can render
+  the result. Values are saved before the network check so a retry after a
+  typo keeps the good fields.
+- Unconfigured calls: Desktop renders a card only for `app=True` tools, so
+  other tools cannot return the card. `load_settings` raises `ConfigError`
+  whose message names the `setup` tool; tools surface it as a `ToolError`,
+  and `INSTRUCTIONS` tells Claude to call `setup`.
 - After a successful `save_settings`, `_client` is set to `None` so the next
   call builds a client from the new settings.
 
@@ -138,7 +137,7 @@ README:
 - `tests/test_server.py`: `setup` returns a `ToolResult` whose structured
   content contains a `Form` with password inputs named `espn_s2`/`swid` and
   never contains the current cookie value; `get_my_team` while unconfigured
-  returns the same card; `save_settings` success (respx-mocked league
+  raises a `ToolError` naming `setup`; `save_settings` success (respx-mocked league
   response) returns `ok: True` with names and writes the file; bad cookies
   (401) return `ok: False` with the cookie message and still write the file.
 - `tests/test_manifest.py`: the three fields are `required: False`.
