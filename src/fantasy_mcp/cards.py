@@ -143,7 +143,7 @@ def _status_line(profile: dict[str, Any]) -> str:
         owner = (profile.get("owned_by") or {}).get("name")
         text = f"Rostered by {owner}" if owner else "Rostered"
     else:
-        text = _STATUS_TEXT.get(status, str(status))
+        text = _STATUS_TEXT.get(status, str(status) if status else "Status unknown")
     last = profile.get("last_season") or {}
     if last.get("points") is not None:
         text += f" · {last.get('year')}: {last['points']} pts"
@@ -239,7 +239,7 @@ def player_card(profile: dict[str, Any]) -> PrefabApp:
                             columns=[
                                 DataTableColumn(key="season", header="Season", sortable=True),
                                 DataTableColumn(key="week", header="Wk", sortable=True, align="right"),
-                                DataTableColumn(key="points", header="Pts", sortable=True, align="right"),
+                                DataTableColumn(key="points", header="Pts", align="right"),
                                 DataTableColumn(key="projected", header="Proj", align="right"),
                                 DataTableColumn(key="line", header="Line"),
                             ],

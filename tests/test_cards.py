@@ -161,7 +161,7 @@ def test_player_card_status_and_injury_variants(player_card_json):
     assert [n["content"] for n in _nodes(app, "CardDescription")] == ["On waivers · 2025: 362.3 pts"]
     assert {n["label"]: n["variant"] for n in _nodes(app, "Badge")}["OUT"] == "destructive"
     owned = {n["label"]: n for n in _nodes(app, "Metric")}["Owned"]
-    assert owned["delta"] in ("-1.2%", "-1.3%")
+    assert owned["delta"] == "-1.2%"
     assert owned["trend"] == "down" and owned["trendSentiment"] == "negative"
 
     profile["injury_status"] = "QUESTIONABLE"
@@ -176,3 +176,10 @@ def test_player_card_separator_only_when_game_log_present(player_card_json):
     empty = _profile(player_card_json)
     empty["game_log"] = []
     assert _nodes(player_card(empty), "Separator") == []
+
+
+def test_player_card_empty_profile_does_not_raise():
+    app = player_card({})
+    assert app.title == "Unknown player — None None"
+    assert [n["content"] for n in _nodes(app, "CardDescription")] == ["Status unknown"]
+    assert _nodes(app, "DataTable") == []
