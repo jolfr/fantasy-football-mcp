@@ -91,8 +91,8 @@ matchup, free agents, players, and league scoring rules. Set up in chat."
 ## 3. Card (`cards.setup_card(current: dict) -> PrefabApp`)
 
 1. Heading "Connect your ESPN league"; one line: ESPN has no public API, so
-   Claude signs in with the two cookies your browser uses. They're private —
-   they never leave this computer except to ESPN.
+   Claude signs in with the two cookies your browser uses. Claude saves them
+   in a config file on this computer and uses them only to sign in to ESPN.
 2. "Find your cookies (Chrome, Edge, Brave)" — five numbered steps: open
    fantasy.espn.com logged in → right-click → Inspect → **Application** tab
    → **Storage → Cookies → https://fantasy.espn.com** → click `espn_s2`,

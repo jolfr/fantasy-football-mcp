@@ -280,10 +280,11 @@ README_COOKIES = "https://github.com/jolfr/fantasy-football-mcp#get-your-espn-co
 
 _COOKIE_STEPS = (
     "Open fantasy.espn.com in Chrome (or Edge/Brave) and make sure you're logged in.",
-    "Right-click the page and choose Inspect, then click the Application tab.",
+    "Right-click the page and choose Inspect, then click the Application tab "
+    "(if you don't see it, it's under the » menu).",
     "In the left sidebar, under Storage, expand Cookies and click https://fantasy.espn.com.",
     "Click the espn_s2 row and copy its Value from the box below the table "
-    '(leave "Show URL-decoded" unchecked). Paste it below.',
+    '(leave "Show URL-decoded" unchecked — the decoded value won\'t work). Paste it below.',
     "Do the same for the SWID row — keep the curly braces.",
 )
 
@@ -295,6 +296,7 @@ def setup_card(current: dict[str, Any]) -> PrefabApp:
         "save_settings",
         arguments={"espn_s2": "{{ espn_s2 }}", "swid": "{{ swid }}", "league_id": "{{ league_id }}"},
         on_success=SetState("result", RESULT),
+        on_error=SetState("result", {"ok": False, "error": "Couldn't reach the server: {{ $error }}"}),
     )
     with PrefabApp(title="Connect your ESPN league", state={"result": {"ok": False, "error": ""}}) as app:
         with Card():
@@ -302,7 +304,8 @@ def setup_card(current: dict[str, Any]) -> PrefabApp:
                 CardTitle(content="Connect your ESPN league")
                 CardDescription(
                     content="ESPN has no public API, so Claude signs in with the two cookies your "
-                    "browser uses. They stay on this computer and are only sent to ESPN."
+                    "browser uses. Claude saves them in a config file on this computer and uses "
+                    "them only to sign in to ESPN."
                 )
             with CardContent():
                 with Column(gap=4):
@@ -330,8 +333,14 @@ def setup_card(current: dict[str, Any]) -> PrefabApp:
                                 input_type="number",
                                 required=True,
                                 value=str(league_id) if league_id is not None else None,
+                                min=1,
+                                step=1,
                             )
                         Button(label="Save & test", button_type="submit")
+                        Muted(
+                            content="Nothing is saved until you press Save & test; "
+                            "Claude then checks the connection with ESPN."
+                        )
                     with If("result.ok"):
                         with Alert(variant="success"):
                             AlertDescription(

@@ -1,3 +1,5 @@
+import json
+
 from fantasy_mcp.cards import player_card, setup_card, stat_line
 from fantasy_mcp.shapes import shape_player_card
 
@@ -69,6 +71,9 @@ def _nodes(app, node_type):
         yield node
         for child in node.get("children") or []:
             yield from walk(child)
+        for case in node.get("cases") or []:  # If/Elif/Else branches
+            for child in case.get("children") or []:
+                yield from walk(child)
 
     return [n for n in walk(app.to_json()["view"]) if n.get("type") == node_type]
 
@@ -246,3 +251,19 @@ def test_setup_card_explains_where_cookies_are():
         assert phrase in text
     (link,) = _nodes(app, "Link")
     assert "fantasy-football-mcp#get-your-espn-cookies-and-league-id" in link["href"]
+
+
+def test_setup_card_result_alerts_bound_to_save_settings_shape():
+    app = setup_card({})
+    assert app.to_json()["state"] == {"result": {"ok": False, "error": ""}}
+    whens = [c["when"] for cond in _nodes(app, "Condition") for c in cond["cases"]]
+    assert whens == ["{{ result.ok }}", "{{ result.error }}"]
+    texts = [n["content"] for n in _nodes(app, "AlertDescription")]
+    assert any("result.team_name" in t and "result.league_name" in t and "result.season" in t for t in texts)
+    assert "{{ result.error }}" in texts
+
+    (form,) = _nodes(app, "Form")
+    submit = form["onSubmit"]
+    submit = submit[0] if isinstance(submit, list) else submit
+    assert submit["onError"]["action"] == "setState"
+    assert "$error" in json.dumps(submit["onError"])
