@@ -592,3 +592,76 @@ def shape_standings(league: dict[str, Any], my_team_id: int | None) -> dict[str,
         "playoff_seeding": schedule.get("playoffSeedingRule"),
         "teams": rows,
     }
+
+
+def _weekly_actuals(player: dict[str, Any], season: int) -> list[tuple[int, float]]:
+    """(week, points) for this season's weekly actual entries, newest first."""
+    rows = [
+        (int(s.get("scoringPeriodId") or 0), float(s.get("appliedTotal") or 0.0))
+        for s in player.get("stats") or []
+        if s.get("seasonId") == season and s.get("statSourceId") == ACTUAL_SOURCE_ID
+        and (s.get("scoringPeriodId") or 0) > 0
+    ]
+    return sorted(rows, key=lambda r: -r[0])
+
+
+def _season_line(player: dict[str, Any], season: int) -> tuple[float | None, int, float | None]:
+    points = _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID, season=season)
+    games = len(_weekly_actuals(player, season))
+    avg = _round(points / games) if points is not None and games else None
+    return points, games, avg
+
+
+def shape_comparison(
+    entries: list[dict[str, Any]], league: dict[str, Any], week: int, schedules: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Compact side-by-side rows for compare_players; entries with an ``error`` key pass through."""
+    season = league.get("seasonId", -1)
+    rows: list[dict[str, Any]] = []
+    for entry in entries:
+        if "error" in entry:
+            rows.append({"player_id": entry.get("player_id", entry.get("id")), "error": entry["error"]})
+            continue
+        player = entry.get("player") or {}
+        ownership = player.get("ownership") or {}
+        player_id = entry.get("id", player.get("id"))
+        position = ids.name(ids.POSITIONS, player.get("defaultPositionId", -1))
+        pro_team = ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1))
+        team = _find_team(league, entry.get("onTeamId")) if entry.get("onTeamId") else None
+        rank = ((entry.get("ratings") or {}).get("0") or {}).get("positionalRanking") or None
+        context = game_context(schedules, player.get("proTeamId"), week)
+        points, games, avg = _season_line(player, season)
+        last_points, last_games, last_avg = _season_line(player, season - 1)
+        rows.append(
+            {
+                "player_id": player_id,
+                "name": player.get("fullName"),
+                "position": position,
+                "pro_team": pro_team,
+                "injury_status": player.get("injuryStatus"),
+                "league_status": entry.get("status"),
+                "owned_by": team.get("name") if team else None,
+                "headshot_url": headshot_url(player_id, position, pro_team),
+                "week": {
+                    "projected": _stat(player, period=week, source=PROJECTION_SOURCE_ID, season=season),
+                    "opponent": context["opponent"],
+                    "kickoff": context["kickoff"],
+                },
+                "season": {
+                    "projected": _stat(player, period=SEASON_PERIOD, source=PROJECTION_SOURCE_ID, season=season),
+                    "points": points,
+                    "positional_rank": rank,
+                    "games": games,
+                    "avg": avg,
+                },
+                "last_3": [_round(p) for _, p in _weekly_actuals(player, season)[:3]],
+                "last_season": (
+                    {"points": last_points, "games": last_games, "avg": last_avg}
+                    if last_points is not None
+                    else None
+                ),
+                "percent_owned": _round(ownership.get("percentOwned"), ndigits=1),
+                "percent_change": _round(ownership.get("percentChange"), ndigits=1),
+            }
+        )
+    return rows

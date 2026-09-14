@@ -51,3 +51,25 @@ def resolve_player(name: str, index: list[dict[str, Any]]) -> int:
         f"{name!r} matches {len(matches)} players (most-owned first){more}: {listed}. "
         "Retry with player_id or a fuller name."
     )
+
+
+def resolve_players(
+    inputs: list[str | int], index: list[dict[str, Any]]
+) -> tuple[list[int], list[dict[str, Any]]]:
+    """Resolve a mixed list of ids / names. Returns (ids in input order, unresolved entries)."""
+    ids: list[int] = []
+    unresolved: list[dict[str, Any]] = []
+    for raw in inputs:
+        try:
+            if isinstance(raw, int):
+                player_id = raw
+            elif isinstance(raw, str) and raw.strip().lstrip("-").isdigit():
+                player_id = int(raw.strip())
+            else:
+                player_id = resolve_player(str(raw), index)
+        except EspnError as e:
+            unresolved.append({"input": raw, "error": str(e)})
+            continue
+        if player_id not in ids:
+            ids.append(player_id)
+    return ids, unresolved

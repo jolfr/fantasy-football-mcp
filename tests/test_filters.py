@@ -102,6 +102,12 @@ def test_player_card_filter_requests_totals_and_all_weekly_projections():
     assert set(players) == {"filterIds", "filterStatsForTopScoringPeriodIds"}
 
 
+def test_player_card_filter_accepts_a_list_of_ids():
+    out = player_card_filter([4242335, 4361370], season=2026)
+    assert out["players"]["filterIds"] == {"value": [4242335, 4361370]}
+    assert player_card_filter(4242335, season=2026)["players"]["filterIds"] == {"value": [4242335]}
+
+
 def test_player_ids_filter():
     out = player_ids_filter([3, 1, 2])
     assert out == {"players": {"filterIds": {"value": [3, 1, 2]}}}

@@ -550,3 +550,33 @@ def test_shape_standings_sparse():
     row = shapes.shape_standings({"teams": [{"id": 9}]}, my_team_id=9)["teams"][0]
     assert row["rank"] == 1 and row["is_me"] is True and row["record"] == {"wins": 0, "losses": 0, "ties": 0}
     assert row["owner"] is None and row["transactions"] == {"acquisitions": 0, "drops": 0, "trades": 0, "faab_spent": 0}
+
+
+def test_shape_comparison_rows(compare_json, pro_schedules_json):
+    ordered = [next(p for p in compare_json["players"] if p["id"] == pid) for pid in (4242335, 4361370)]
+    rows = shapes.shape_comparison(ordered, compare_json, 2, pro_schedules_json)
+    assert [r["name"] for r in rows] == ["Compare Back", "Compare Receiver"]
+    back = rows[0]
+    assert back == {
+        "player_id": 4242335, "name": "Compare Back", "position": "RB", "pro_team": "IND",
+        "injury_status": "ACTIVE", "league_status": "ONTEAM", "owned_by": "My Matchup Team",
+        "headshot_url": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4242335.png&w=350&h=254",
+        "week": {"projected": 17.68, "opponent": "@KC", "kickoff": "2026-09-21T00:20:00Z"},
+        "season": {"projected": 315.58, "points": 25.1, "positional_rank": 4, "games": 1, "avg": 25.1},
+        "last_3": [25.1],
+        "last_season": {"points": 362.3, "games": 4, "avg": 90.58},
+        "percent_owned": 99.9, "percent_change": 0.0,
+    }
+    rec = rows[1]
+    assert rec["league_status"] == "FREEAGENT" and rec["owned_by"] is None
+    assert rec["week"] == {"projected": 15.55, "opponent": "@BAL", "kickoff": "2026-09-20T17:00:00Z"}
+    assert rec["last_season"] == {"points": 268.0, "games": 3, "avg": 89.33}
+    assert rec["last_3"] == [28.2]
+
+
+def test_shape_comparison_unknown_id_and_no_last_season(compare_json, pro_schedules_json):
+    entry = next(p for p in compare_json["players"] if p["id"] == 4242335)
+    entry["player"]["stats"] = [s for s in entry["player"]["stats"] if s["seasonId"] == 2026]
+    rows = shapes.shape_comparison([entry, {"id": 99, "error": "ESPN returned no player with id 99."}], compare_json, 2, {})
+    assert rows[0]["last_season"] is None and rows[0]["week"]["opponent"] is None
+    assert rows[1] == {"player_id": 99, "error": "ESPN returned no player with id 99."}

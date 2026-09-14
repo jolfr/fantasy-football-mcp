@@ -1,7 +1,7 @@
 import pytest
 
 from fantasy_mcp.espn import EspnError
-from fantasy_mcp.players import resolve_player
+from fantasy_mcp.players import resolve_player, resolve_players
 
 
 def test_exact_match(players_index):
@@ -43,6 +43,19 @@ def test_no_match(players_index):
 def test_blank_name_is_rejected(players_index, blank):
     with pytest.raises(EspnError, match="name is required"):
         resolve_player(blank, players_index)
+
+
+def test_resolve_players_mixed_inputs_preserve_order_and_collect_errors(players_index):
+    ids, unresolved = resolve_players(["kraft", 4242335, "tucker", "Nobody Real", "4242335", "A.J. Brown"], players_index)
+    assert ids == [4572680, 4242335, 1001]           # duplicates dropped, order kept
+    assert [u["input"] for u in unresolved] == ["tucker", "Nobody Real"]
+    assert "id 4572680" in unresolved[0]["error"]
+    assert "No active player matches" in unresolved[1]["error"]
+
+
+def test_resolve_players_empty_and_blank():
+    ids, unresolved = resolve_players(["", " "], [])
+    assert ids == [] and len(unresolved) == 2
 
 
 def test_entry_without_name_does_not_crash(players_index):
