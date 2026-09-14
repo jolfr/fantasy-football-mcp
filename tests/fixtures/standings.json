@@ -1,0 +1,153 @@
+{
+  "id": 4242,
+  "seasonId": 2026,
+  "scoringPeriodId": 1,
+  "status": {
+    "currentMatchupPeriod": 1
+  },
+  "settings": {
+    "name": "Test League",
+    "scheduleSettings": {
+      "playoffTeamCount": 6,
+      "playoffSeedingRule": "TOTAL_POINTS_SCORED"
+    }
+  },
+  "members": [
+    {
+      "id": "{ABC-123}",
+      "displayName": "espnfan1",
+      "firstName": "Alex",
+      "lastName": "Owner"
+    },
+    {
+      "id": "{DEF-456}",
+      "displayName": "espnfan2"
+    },
+    {
+      "id": "{GHI-789}",
+      "displayName": "espnfan3",
+      "firstName": "Casey",
+      "lastName": ""
+    }
+  ],
+  "teams": [
+    {
+      "id": 12,
+      "name": "My Standings Team",
+      "abbrev": "MST",
+      "owners": [
+        "{ABC-123}"
+      ],
+      "playoffSeed": 1,
+      "record": {
+        "overall": {
+          "wins": 2,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": 231.5,
+          "pointsAgainst": 190.2,
+          "streakType": "WIN",
+          "streakLength": 2,
+          "gamesBack": 0.0
+        }
+      },
+      "currentProjectedRank": 3,
+      "waiverRank": 5,
+      "playoffClinchType": "NONE",
+      "transactionCounter": {
+        "acquisitions": 1,
+        "drops": 1,
+        "trades": 0,
+        "acquisitionBudgetSpent": 12
+      }
+    },
+    {
+      "id": 5,
+      "name": "Rival One",
+      "abbrev": "RV1",
+      "owners": [
+        "{DEF-456}"
+      ],
+      "playoffSeed": 2,
+      "record": {
+        "overall": {
+          "wins": 2,
+          "losses": 0,
+          "ties": 0,
+          "pointsFor": 220.0,
+          "pointsAgainst": 201.1,
+          "streakType": "WIN",
+          "streakLength": 2,
+          "gamesBack": 0.0
+        }
+      },
+      "currentProjectedRank": 1,
+      "waiverRank": 2,
+      "playoffClinchType": "CLINCHED_PLAYOFFS",
+      "transactionCounter": {
+        "acquisitions": 0,
+        "drops": 0,
+        "trades": 1,
+        "acquisitionBudgetSpent": 0
+      }
+    },
+    {
+      "id": 7,
+      "name": "Rival Two",
+      "abbrev": "RV2",
+      "owners": [
+        "{GHI-789}"
+      ],
+      "playoffSeed": 3,
+      "record": {
+        "overall": {
+          "wins": 1,
+          "losses": 1,
+          "ties": 0,
+          "pointsFor": 205.4,
+          "pointsAgainst": 210.0,
+          "streakType": "LOSS",
+          "streakLength": 1,
+          "gamesBack": 1.0
+        }
+      },
+      "currentProjectedRank": 6,
+      "waiverRank": 9,
+      "playoffClinchType": "NONE",
+      "transactionCounter": {
+        "acquisitions": 3,
+        "drops": 3,
+        "trades": 0,
+        "acquisitionBudgetSpent": 40
+      }
+    },
+    {
+      "id": 3,
+      "name": "Rival Three",
+      "abbrev": "RV3",
+      "owners": [],
+      "playoffSeed": 4,
+      "record": {
+        "overall": {
+          "wins": 0,
+          "losses": 2,
+          "ties": 0,
+          "pointsFor": 180.0,
+          "pointsAgainst": 235.6,
+          "streakType": "LOSS",
+          "streakLength": 2,
+          "gamesBack": 2.0
+        }
+      },
+      "currentProjectedRank": 12,
+      "waiverRank": 1,
+      "playoffClinchType": "NONE",
+      "transactionCounter": {
+        "acquisitions": 0,
+        "drops": 0,
+        "trades": 0,
+        "acquisitionBudgetSpent": 0
+      }
+    }
+  ]
+}
