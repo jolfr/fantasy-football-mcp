@@ -102,20 +102,31 @@ def test_player_card_header_and_metrics(player_card_json):
 
 
 def test_player_card_chart_and_table(player_card_json):
-    app = player_card(_profile(player_card_json))
+    profile = _profile(player_card_json)
+    profile["game_log"].insert(0, {"season": 2026, "week": 2, "points": 12.0, "projected": None, "stats": {}})
+    app = player_card(profile)
 
     (chart,) = _nodes(app, "LineChart")
     assert chart["xAxis"] == "week"
-    assert chart["data"] == [{"week": "W1", "points": 25.1, "projected": 17.75}]
+    assert chart["data"] == [
+        {"week": "W1", "points": 25.1, "projected": 17.75},
+        {"week": "W2", "points": 12.0, "projected": None},
+    ]
     assert [s["dataKey"] for s in chart["series"]] == ["points", "projected"]
 
     (table,) = _nodes(app, "DataTable")
     assert [c["key"] for c in table["columns"]] == ["season", "week", "points", "projected", "line"]
     assert table["paginated"] is True and table["pageSize"] == 10
-    assert [(r["season"], r["week"]) for r in table["rows"]] == [(2026, 1), (2025, 18), (2025, 17)]
-    assert table["rows"][0]["line"] == "19 car 98 yds 2 TD · 3 rec 23 yds (4 tgt) · 1 fum lost"
-    assert table["rows"][0]["projected"] == 17.75
-    assert table["rows"][1]["projected"] == "—"
+    assert [(r["season"], r["week"]) for r in table["rows"]] == [(2026, 2), (2026, 1), (2025, 18), (2025, 17)]
+    assert table["rows"][1]["line"] == "19 car 98 yds 2 TD · 3 rec 23 yds (4 tgt) · 1 fum lost"
+    assert table["rows"][1]["projected"] == 17.75
+    assert table["rows"][0]["projected"] == "—"
+
+
+def test_player_card_hides_chart_with_a_single_game(player_card_json):
+    app = player_card(_profile(player_card_json))  # fixture has one 2026 game
+    assert _nodes(app, "LineChart") == []
+    assert len(_nodes(app, "DataTable")) == 1
 
 
 def test_player_card_sparse_profile_does_not_raise():

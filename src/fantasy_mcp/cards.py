@@ -135,6 +135,7 @@ def stat_line(stats: Stats | None) -> str:
 _INJURY_VARIANT = {"ACTIVE": "success", "QUESTIONABLE": "warning", "DOUBTFUL": "warning"}
 _STATUS_TEXT = {"FREEAGENT": "Free agent", "WAIVERS": "On waivers"}
 _DASH = "—"
+MIN_CHART_POINTS = 2
 
 
 def _status_line(profile: dict[str, Any]) -> str:
@@ -201,6 +202,8 @@ def player_card(profile: dict[str, Any]) -> PrefabApp:
     injury = profile.get("injury_status")
     rank = season.get("positional_rank")
     chart_rows = _chart_rows(profile)
+    if len(chart_rows) < MIN_CHART_POINTS:
+        chart_rows = []  # a one-point line chart is dead space early in the season
     table_rows = _table_rows(profile)
 
     with PrefabApp(title=f"{name} — {position} {team}") as app:

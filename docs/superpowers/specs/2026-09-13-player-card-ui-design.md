@@ -106,7 +106,7 @@ PrefabApp(title=f"{name} — {position} {pro_team}")
     ├ LineChart(data=<this season's game_log rows ascending by week:
     │             {"week": "W1", "points": 25.1, "projected": 17.75}>,
     │           series=[ChartSeries("points","Points"), ChartSeries("projected","Projected")],
-    │           x_axis="week", height=160, show_dots=True)        # omitted if no rows this season
+    │           x_axis="week", height=160, show_dots=True)        # omitted with fewer than 2 games this season
     └ DataTable(columns=[Season, Wk, Pts, Proj, Line], rows=<all game_log rows,
                 newest first, Line=stat_line(stats), Proj="—" when None>,
                 search=False, paginated=True, page_size=10)      # omitted if game_log empty
@@ -163,8 +163,9 @@ error, so the sparse-profile test is mandatory.
   assert: title contains "Card Back"; a Badge with label "RB · IND" and one
   with "ACTIVE" variant success; CardDescription "Rostered by My Matchup
   Team · 2025: 362.3 pts"; Metric values 25.1 / 315.58 / "#4" / "99.9%";
-  LineChart data has 1 row (`W1`); DataTable has 3 rows and the first
-  row's Line is the RB string above.
+  with a second 2026 game added, LineChart data has 2 rows (`W1`, `W2`);
+  with the fixture as-is (one game) no LineChart is emitted; DataTable has
+  the game rows and the week-1 row's Line is the RB string above.
 - Sparse profile (all nulls, empty game_log, `league_status` "FREEAGENT")
   → no exception; description "Free agent"; no LineChart/DataTable/Muted
   nodes present; metrics show "—".
