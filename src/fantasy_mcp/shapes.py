@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import Any
 
 from fantasy_mcp import ids
 from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
-from fantasy_mcp.stats import shape_stat_line
+from fantasy_mcp.stats import scoring_name, shape_stat_line
 
 # player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
 # and statSourceId (0 = actual, 1 = projected).
@@ -303,4 +304,131 @@ def shape_player_card(entry: dict[str, Any], league: dict[str, Any]) -> dict[str
         "last_season": {"year": season - 1, "points": last_points} if last_points is not None else None,
         "outlook": player.get("seasonOutlook") or None,
         "game_log": _game_log(player, season),
+    }
+
+
+DST_POSITION_ID = 16
+
+
+def _num(value: Any) -> int | float:
+    number = float(value)
+    return int(number) if number.is_integer() else number
+
+
+def _scoring_rules(items: list[dict[str, Any]]) -> dict[str, int | float]:
+    rules: dict[str, int | float] = {}
+    for item in items or []:
+        points = item.get("points") or 0
+        if not points:
+            points = (item.get("pointsOverrides") or {}).get(str(DST_POSITION_ID)) or 0
+        if points and item.get("statId") is not None:
+            rules[scoring_name(int(item["statId"]))] = _num(points)
+    return rules
+
+
+def _per_point(points: int | float) -> int | float:
+    return _num(round(1 / points)) if points else 0
+
+
+def _scoring_summary(rules: dict[str, int | float]) -> str:
+    parts: list[str] = []
+    ppr = rules.get("receptions", 0)
+    parts.append(
+        "Full PPR" if ppr == 1 else "Half PPR" if ppr == 0.5 else f"{ppr} PPR" if ppr else "Standard (no PPR)"
+    )
+    if rules.get("pass_yds"):
+        parts.append(f"{_per_point(rules['pass_yds'])} pass yds/pt")
+    rush_y, rec_y = rules.get("rush_yds"), rules.get("rec_yds")
+    if rush_y and rush_y == rec_y:
+        parts.append(f"{_per_point(rush_y)} rush/rec yds/pt")
+    else:
+        if rush_y:
+            parts.append(f"{_per_point(rush_y)} rush yds/pt")
+        if rec_y:
+            parts.append(f"{_per_point(rec_y)} rec yds/pt")
+    if rules.get("pass_td"):
+        parts.append(f"{rules['pass_td']}-pt pass TD")
+    rush_td, rec_td = rules.get("rush_td"), rules.get("rec_td")
+    if rush_td and rush_td == rec_td:
+        parts.append(f"{rush_td}-pt rush/rec TD")
+    else:
+        if rush_td:
+            parts.append(f"{rush_td}-pt rush TD")
+        if rec_td:
+            parts.append(f"{rec_td}-pt rec TD")
+    if rules.get("pass_int"):
+        parts.append(f"{rules['pass_int']} INT")
+    if rules.get("fumbles_lost"):
+        parts.append(f"{rules['fumbles_lost']} fumble lost")
+    return " · ".join(parts)
+
+
+def _epoch_ms_date(value: Any) -> str | None:
+    if not value:
+        return None
+    return dt.datetime.fromtimestamp(int(value) / 1000, dt.timezone.utc).date().isoformat()
+
+
+def _unlimited_to_none(value: Any) -> Any:
+    return None if value is None or value == -1 else value
+
+
+def shape_league_settings(league: dict[str, Any]) -> dict[str, Any]:
+    """Shape an ``mSettings`` payload into scoring, roster, schedule, waiver, and trade rules."""
+    settings = league.get("settings") or {}
+    roster = settings.get("rosterSettings") or {}
+    scoring = settings.get("scoringSettings") or {}
+    schedule = settings.get("scheduleSettings") or {}
+    waivers = settings.get("acquisitionSettings") or {}
+    trades = settings.get("tradeSettings") or {}
+    status = league.get("status") or {}
+
+    rules = _scoring_rules(scoring.get("scoringItems") or [])
+    lineup = {
+        ids.name(ids.LINEUP_SLOTS, int(slot)): count
+        for slot, count in sorted((roster.get("lineupSlotCounts") or {}).items(), key=lambda kv: int(kv[0]))
+        if count
+    }
+    limits = {
+        ids.name(ids.POSITIONS, int(pos)): limit
+        for pos, limit in sorted((roster.get("positionLimits") or {}).items(), key=lambda kv: int(kv[0]))
+        if limit is not None and limit > 0
+    }
+    return {
+        "league_name": settings.get("name"),
+        "size": settings.get("size"),
+        "is_public": settings.get("isPublic"),
+        "scoring": {
+            "type": scoring.get("scoringType"),
+            "ppr": rules.get("receptions", 0),
+            "rules": rules,
+            "summary": _scoring_summary(rules),
+        },
+        "roster": {
+            "lineup": lineup,
+            "position_limits": limits,
+            "move_limit": _unlimited_to_none(roster.get("moveLimit")),
+            "lineup_lock": roster.get("lineupLocktimeType"),
+        },
+        "schedule": {
+            "regular_season_weeks": schedule.get("matchupPeriodCount"),
+            "matchup_weeks_per_period": schedule.get("matchupPeriodLength"),
+            "playoff_teams": schedule.get("playoffTeamCount"),
+            "playoff_seeding": schedule.get("playoffSeedingRule"),
+            "current_week": status.get("currentMatchupPeriod"),
+            "final_week": status.get("finalScoringPeriod"),
+        },
+        "waivers": {
+            "type": waivers.get("acquisitionType"),
+            "budget": waivers.get("acquisitionBudget"),
+            "min_bid": waivers.get("minimumBid"),
+            "waiver_hours": waivers.get("waiverHours"),
+            "order_resets": waivers.get("waiverOrderReset"),
+            "process_days": waivers.get("waiverProcessDays") or [],
+        },
+        "trades": {
+            "deadline": _epoch_ms_date(trades.get("deadlineDate")),
+            "review_hours": trades.get("revisionHours"),
+            "veto_votes_required": trades.get("vetoVotesRequired"),
+        },
     }

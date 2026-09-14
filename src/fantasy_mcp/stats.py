@@ -71,3 +71,31 @@ def shape_stat_line(raw: dict[str, Any] | None) -> dict[str, int | float]:
             continue
         line[name] = int(number) if number.is_integer() else number
     return line
+
+
+# Scoring-item ids (league settings) that don't appear in game logs, verified live.
+SCORING_STAT_NAMES: dict[int, str] = {
+    **STAT_NAMES,
+    198: "fg_made_50_plus",
+    89: "dst_points_allowed_0",
+    90: "dst_points_allowed_1_6",
+    91: "dst_points_allowed_7_13",
+    92: "dst_points_allowed_14_17",
+    123: "dst_points_allowed_28_34",
+    124: "dst_points_allowed_35_45",
+    125: "dst_points_allowed_46_plus",
+    128: "dst_yards_allowed_under_100",
+    129: "dst_yards_allowed_100_199",
+    130: "dst_yards_allowed_200_299",
+    131: "dst_yards_allowed_300_349",
+    132: "dst_yards_allowed_350_399",
+    133: "dst_yards_allowed_400_449",
+    134: "dst_yards_allowed_450_499",
+    135: "dst_yards_allowed_500_549",
+    136: "dst_yards_allowed_550_plus",
+}
+
+
+def scoring_name(stat_id: int) -> str:
+    """Name for a league scoring item; unmapped ids become ``stat_<id>`` rather than a guess."""
+    return SCORING_STAT_NAMES.get(stat_id, f"stat_{stat_id}")

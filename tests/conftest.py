@@ -49,3 +49,8 @@ def players_index() -> list:
 @pytest.fixture
 def player_card_json() -> dict:
     return json.loads((FIXTURES / "player_card.json").read_text())
+
+
+@pytest.fixture
+def league_settings_json() -> dict:
+    return json.loads((FIXTURES / "league_settings.json").read_text())

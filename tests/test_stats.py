@@ -1,4 +1,4 @@
-from fantasy_mcp.stats import STAT_NAMES, shape_stat_line
+from fantasy_mcp.stats import STAT_NAMES, scoring_name, shape_stat_line
 
 
 def test_maps_known_ids_drops_unknown_and_zero():
@@ -24,3 +24,10 @@ def test_names_are_unique_snake_case():
 
 def test_negative_values_are_kept():
     assert shape_stat_line({"23": -1.0}) == {"rush_att": -1}
+
+
+def test_scoring_name_known_alias_and_unknown():
+    assert scoring_name(53) == "receptions"
+    assert scoring_name(198) == "fg_made_50_plus"
+    assert scoring_name(130) == "dst_yards_allowed_200_299"
+    assert scoring_name(63) == "stat_63"

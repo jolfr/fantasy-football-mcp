@@ -376,3 +376,64 @@ def test_shape_player_card_includes_headshot_url(player_card_json):
     out = shapes.shape_player_card(player_card_json["players"][0], player_card_json)
     assert out["headshot_url"].endswith("/4242335.png&w=350&h=254")
     assert list(out)[:2] == ["player_id", "headshot_url"]
+
+
+def test_shape_league_settings_from_fixture(league_settings_json):
+    out = shapes.shape_league_settings(league_settings_json)
+    assert out["league_name"] == "Test League"
+    assert out["size"] == 12
+    assert out["is_public"] is False
+
+    scoring = out["scoring"]
+    assert scoring["type"] == "H2H_POINTS"
+    assert scoring["ppr"] == 1
+    rules = scoring["rules"]
+    assert rules["pass_yds"] == 0.04 and rules["pass_td"] == 4 and rules["pass_int"] == -2
+    assert rules["rush_yds"] == 0.1 and rules["rec_yds"] == 0.1 and rules["receptions"] == 1
+    assert rules["fg_made_50_plus"] == 5 and rules["fg_missed"] == -1
+    assert rules["stat_63"] == 6                                       # unmapped id kept honestly
+    assert "team_win" not in rules                                     # zero-point items dropped
+    # This fixture has no pointsOverrides data, so all D/ST scoring items
+    # (points: 0.0, no override) are zero-point and correctly dropped.
+    for dst_stat in (
+        "dst_sacks", "dst_int", "dst_yards_allowed_200_299", "dst_yards_allowed_550_plus"
+    ):
+        assert dst_stat not in rules
+    assert scoring["summary"] == (
+        "Full PPR · 25 pass yds/pt · 10 rush/rec yds/pt · 4-pt pass TD · 6-pt rush/rec TD · -2 INT · -2 fumble lost"
+    )
+
+    roster = out["roster"]
+    assert roster["lineup"] == {"QB": 1, "RB": 2, "WR": 2, "TE": 1, "D/ST": 1, "K": 1, "BENCH": 7, "IR": 1, "FLEX": 1}
+    assert list(roster["lineup"]) == ["QB", "RB", "WR", "TE", "D/ST", "K", "BENCH", "IR", "FLEX"]  # slot-id order
+    assert roster["position_limits"] == {"QB": 4, "RB": 8, "WR": 8, "TE": 3, "K": 3, "D/ST": 3}
+    assert roster["move_limit"] is None
+    assert roster["lineup_lock"] == "INDIVIDUAL_GAME"
+
+    assert out["schedule"] == {
+        "regular_season_weeks": 14, "matchup_weeks_per_period": 1, "playoff_teams": 6,
+        "playoff_seeding": "TOTAL_POINTS_SCORED", "current_week": 1, "final_week": 17,
+    }
+    assert out["waivers"] == {
+        "type": "WAIVERS_TRADITIONAL", "budget": 100, "min_bid": 1, "waiver_hours": 24,
+        "order_resets": True,
+        "process_days": ["MONDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"],
+    }
+    assert out["trades"] == {"deadline": "2026-12-02", "review_hours": 24, "veto_votes_required": 5}
+
+
+def test_shape_league_settings_sparse():
+    out = shapes.shape_league_settings({})
+    assert out["league_name"] is None and out["size"] is None
+    assert out["scoring"] == {"type": None, "ppr": 0, "rules": {}, "summary": "Standard (no PPR)"}
+    assert out["roster"] == {"lineup": {}, "position_limits": {}, "move_limit": None, "lineup_lock": None}
+    assert out["trades"]["deadline"] is None
+
+
+def test_scoring_summary_half_ppr_and_split_rules():
+    league = {"settings": {"scoringSettings": {"scoringItems": [
+        {"statId": 53, "points": 0.5}, {"statId": 24, "points": 0.1}, {"statId": 42, "points": 0.2},
+        {"statId": 25, "points": 6}, {"statId": 43, "points": 4}, {"statId": 20, "points": -1},
+    ]}}}
+    summary = shapes.shape_league_settings(league)["scoring"]["summary"]
+    assert summary == "Half PPR · 10 rush yds/pt · 5 rec yds/pt · 6-pt rush TD · 4-pt rec TD · -1 INT"
