@@ -108,7 +108,11 @@ _pro_schedules: dict[str, Any] | None = None
 
 
 def _get_pro_schedules(client: EspnClient) -> dict[str, Any]:
-    """ESPN's NFL schedule/bye table, fetched once per process."""
+    """ESPN's NFL schedule/bye table, fetched once per process.
+
+    Kickoff times can be flexed by the NFL mid-season; a long-lived process
+    will keep the times it first saw. Restart the server to refresh.
+    """
     global _pro_schedules
     if _pro_schedules is None:
         _pro_schedules = client.get_pro_schedules()
@@ -218,18 +222,21 @@ def get_projections(week: int | None = None) -> dict[str, Any]:
     """ESPN projections for the user's roster for one NFL week, with a suggested optimal lineup.
 
     Use this for "set my lineup", "start X or Y?", or "who's on bye?". week
-    defaults to the current NFL week; once this week's games have started,
-    pass next week's number to plan ahead (projections exist as soon as ESPN
-    publishes them, usually the Tuesday before).
+    defaults to current_week (the league's current NFL week, which ESPN keeps
+    until the week's games finish); to plan ahead once games have kicked off,
+    call again with week = current_week + 1. Projections are null until ESPN
+    publishes them.
 
     players: every rostered player with slot (current lineup slot), opponent
     ("@KC" away, "vs KC" home, "BYE"), kickoff (UTC), and projected (ESPN's
     points projection for that week; null if ESPN has none). suggested_lineup
-    fills this league's starting slots (including FLEX-type slots and their
-    eligibility rules) to maximize projected points; players on IR are never
-    moved. changes lists who to start and who to sit to get there, with the
-    projected gain. Present changes to the user rather than the whole table
-    when they ask for lineup advice.
+    fills this league's starting slots (including FLEX/superflex slots and
+    their eligibility rules) to maximize projected points; players on IR or
+    marked OUT/suspended are never started. changes lists who to start (with
+    their suggested slot) and who to sit (with their current slot) to get
+    there, plus the projected gain; a continuing starter that merely moves
+    slots appears only in suggested_lineup. Present changes to the user rather
+    than the whole table when they ask for lineup advice.
     """
     if week is not None and not 1 <= week <= MAX_WEEK:
         raise ToolError(f"week must be between 1 and {MAX_WEEK} (got {week}).")
@@ -244,13 +251,24 @@ def get_projections(week: int | None = None) -> dict[str, Any]:
             .get("lineupSlotCounts", {})
             .items()
         }
-        target_week = week or league.get("scoringPeriodId") or 1
+        current_week = league.get("scoringPeriodId")
+        if current_week is None:
+            raise EspnError("ESPN response is missing scoringPeriodId.")
+        target_week = week or current_week
         ids_ = [e.get("playerId") for e in entries if e.get("playerId") is not None]
         proj = client.get(
             "kona_player_info", fantasy_filter=player_ids_filter(ids_), scoring_period=target_week
         )
         schedules = _get_pro_schedules(client)
-        return shape_projections(target_week, entries, proj.get("players") or [], schedules, counts)
+        return shape_projections(
+            target_week,
+            entries,
+            proj.get("players") or [],
+            schedules,
+            counts,
+            season=league.get("seasonId", client.settings.season),
+            current_week=current_week,
+        )
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 

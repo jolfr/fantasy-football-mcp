@@ -59,18 +59,20 @@ NON_STARTING_SLOTS = {20, 21}
 def optimal_lineup(players: list[dict], slot_counts: dict[int, int]) -> dict[int, list[dict]]:
 ```
 `players` rows carry `player_id`, `projected` (float or None → 0),
-`eligible_slots` (list[int]), `slot_id` (current). Excludes players
-currently in IR (21). Fills each dedicated slot in `DEDICATED_SLOTS` order
-with the top-`count` unassigned players whose `eligible_slots` include it
-(sort key: projected desc, currently-in-that-slot first, then player_id);
-then every remaining starting slot (flex-type) in ascending slot-id order
-the same way. Returns `{slot_id: [rows]}` for starting slots only.
-Greedy is optimal because dedicated slots are disjoint and flex takes the
-remainder.
+`eligible_slots` (list[int]), `slot_id` (current), `injury_status`.
+Excludes players on IR (21) and players whose status is OUT /
+INJURY_RESERVE / SUSPENSION (ESPN may still project points for them).
+Solves the assignment exactly: memoized search over slot instances (in
+slot-id order) and the bitmask of used players, allowing an empty slot —
+correct for FLEX/superflex (OP) slots and dual-eligible players, where a
+dedicated-first greedy is provably wrong. Ties prefer keeping a current
+starter in their slot (tiny bonus). ≤ 10 slot instances × ≤ 18 players runs
+in milliseconds. Returns `{slot_id: [rows]}` for starting slots only.
 
 ### `shapes.py`
 ```python
-def shape_projections(week, roster_entries, projections_players, schedules, slot_counts) -> dict
+def shape_projections(week, roster_entries, projections_players, schedules, slot_counts,
+                      *, season, current_week=None) -> dict
 ```
 - Row per roster entry: `player_id, name, position, pro_team, injury_status,
   slot` (current, `ids.LINEUP_SLOTS`), `opponent, kickoff` (from
@@ -88,7 +90,7 @@ def shape_projections(week, roster_entries, projections_players, schedules, slot
 
 Output:
 ```json
-{"week": 2, "players": [...], "current_total": 91.5,
+{"week": 2, "current_week": 1, "players": [...], "current_total": 91.5,
  "suggested_lineup": [{"slot": "QB", "player_id": ..., "name": ..., "projected": 19.4}, ...],
  "suggested_total": 101.5,
  "changes": {"start": [...], "sit": [...], "gain": 10.0}}
@@ -102,12 +104,15 @@ def get_projections(week: int | None = None) -> dict[str, Any]:
 1. `league = client.get("mRoster", "mSettings")`; `team_id = client.find_my_team_id(league)`;
    `entries = team_by_id(...)["roster"]["entries"]`; `slot_counts` from
    `settings.rosterSettings.lineupSlotCounts` (int keys).
-2. `week = week or league["scoringPeriodId"]`; validate `1 <= week <= 18` else
-   `ToolError`.
+2. `current_week = league["scoringPeriodId"]` (missing → `EspnError`);
+   `week = week or current_week`; validate `1 <= week <= 18` else `ToolError`.
 3. `proj = client.get("kona_player_info", fantasy_filter=player_ids_filter(ids), scoring_period=week)`.
 4. `schedules = _get_pro_schedules(client)` — module cache like the player
    index (`set_pro_schedules_for_tests`).
-5. `return shape_projections(week, entries, proj["players"], schedules, slot_counts)`.
+5. `return shape_projections(week, entries, proj["players"], schedules, slot_counts,
+   season=league["seasonId"], current_week=current_week)` — the season is
+   passed explicitly (never inferred from stats, which may list a prior
+   season first).
 Errors → `ToolError` as usual. Docstring: when to use, `week` semantics
 ("current NFL week by default; pass next week's number once this week's
 games have started"), field meanings, that `suggested_lineup` respects the

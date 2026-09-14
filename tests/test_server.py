@@ -11,7 +11,7 @@ from fantasy_mcp import server
 from fantasy_mcp.espn import EspnClient
 from fantasy_mcp.server import INSTRUCTIONS
 from fantasy_mcp.shapes import shape_player_card
-from tests.conftest import LEAGUE_URL, PLAYERS_URL
+from tests.conftest import LEAGUE_URL, PLAYERS_URL, SEASON_URL
 
 
 @pytest.fixture
@@ -322,3 +322,22 @@ async def test_seven_tools_registered(client):
         names = sorted(t.name for t in await c.list_tools())
     assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
                      "get_player", "get_projections", "whoami"]
+
+
+@respx.mock
+async def test_get_projections_fetches_and_caches_schedules(client, roster_settings_json, projections_json, pro_schedules_json):
+    def respond(request):
+        views = request.url.params.get_list("view")
+        return httpx.Response(200, json=projections_json if "kona_player_info" in views else roster_settings_json)
+
+    respx.get(LEAGUE_URL).mock(side_effect=respond)
+    sched = respx.get(SEASON_URL).mock(return_value=httpx.Response(200, json=pro_schedules_json))
+    server.set_pro_schedules_for_tests(None)
+    try:
+        async with Client(server.mcp) as c:
+            await c.call_tool("get_projections", {"week": 2})
+            result = await c.call_tool("get_projections", {"week": 2})
+    finally:
+        server.set_pro_schedules_for_tests(None)
+    assert sched.call_count == 1
+    assert result.data["players"][1]["opponent"] == "@KC"

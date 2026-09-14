@@ -448,8 +448,8 @@ def _proj_args(roster_settings_json, projections_json, pro_schedules_json):
 
 
 def test_shape_projections_rows_and_lineup(roster_settings_json, projections_json, pro_schedules_json):
-    out = shapes.shape_projections(*_proj_args(roster_settings_json, projections_json, pro_schedules_json))
-    assert out["week"] == 2
+    out = shapes.shape_projections(*_proj_args(roster_settings_json, projections_json, pro_schedules_json), season=2026, current_week=1)
+    assert out["week"] == 2 and out["current_week"] == 1
     names = [p["name"] for p in out["players"]]
     assert names == ["QB One", "RB One", "WR One", "WR Two", "TE One", "Def One", "Kicker One", "WR Bench"]
     rb = out["players"][1]
@@ -477,7 +477,7 @@ def test_shape_projections_bye_and_missing_projection(roster_settings_json, proj
         if team["id"] == 11:
             team["byeWeek"] = 2
     projections_json["players"] = [p for p in projections_json["players"] if p["id"] != 4361050]  # drop TE
-    out = shapes.shape_projections(*_proj_args(roster_settings_json, projections_json, pro_schedules_json))
+    out = shapes.shape_projections(*_proj_args(roster_settings_json, projections_json, pro_schedules_json), season=2026, current_week=1)
     rb = next(p for p in out["players"] if p["name"] == "RB One")
     assert rb["opponent"] == "BYE" and rb["kickoff"] is None
     te = next(p for p in out["players"] if p["name"] == "TE One")
@@ -486,6 +486,18 @@ def test_shape_projections_bye_and_missing_projection(roster_settings_json, proj
 
 
 def test_shape_projections_empty_inputs():
-    out = shapes.shape_projections(1, [], [], {}, {})
-    assert out == {"week": 1, "players": [], "current_total": 0, "suggested_lineup": [],
-                   "suggested_total": 0, "changes": {"start": [], "sit": [], "gain": 0}}
+    out = shapes.shape_projections(1, [], [], {}, {}, season=2026)
+    assert out == {"week": 1, "current_week": None, "players": [], "current_total": 0,
+                   "suggested_lineup": [], "suggested_total": 0,
+                   "changes": {"start": [], "sit": [], "gain": 0}}
+
+
+def test_shape_projections_ignores_prior_season_stats_listed_first(
+    roster_settings_json, projections_json, pro_schedules_json
+):
+    for p in projections_json["players"]:
+        p["player"]["stats"].insert(0, {"seasonId": 2025, "scoringPeriodId": 2, "statSourceId": 1, "appliedTotal": 99.9})
+    out = shapes.shape_projections(
+        *_proj_args(roster_settings_json, projections_json, pro_schedules_json), season=2026
+    )
+    assert next(p for p in out["players"] if p["name"] == "RB One")["projected"] == 17.68

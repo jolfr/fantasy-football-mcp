@@ -457,10 +457,12 @@ def shape_projections(
     projections_players: list[dict[str, Any]],
     schedules: dict[str, Any],
     slot_counts: dict[int, int],
+    *,
+    season: int,
+    current_week: int | None = None,
 ) -> dict[str, Any]:
     """Weekly projections for a roster plus a suggested optimal lineup and the changes to reach it."""
     by_id = {p.get("id"): p.get("player") or {} for p in projections_players or []}
-    season = next((s.get("seasonId") for p in by_id.values() for s in (p.get("stats") or [])), -1)
 
     rows: list[dict[str, Any]] = []
     for entry in roster_entries or []:
@@ -473,7 +475,7 @@ def shape_projections(
                 **{k: base[k] for k in ("player_id", "name", "position", "pro_team", "injury_status", "slot")},
                 "opponent": context["opponent"],
                 "kickoff": context["kickoff"],
-                "projected": _projection_for(player, week, season) if by_id.get(base["player_id"]) else None,
+                "projected": _projection_for(player, week, season),
                 "_slot_id": entry.get("lineupSlotId", 99),
                 "_eligible": player.get("eligibleSlots") or [],
             }
@@ -487,7 +489,8 @@ def shape_projections(
 
     lineup_input = [
         {"player_id": r["player_id"], "name": r["name"], "projected": r["projected"],
-         "eligible_slots": r["_eligible"], "slot_id": r["_slot_id"]}
+         "eligible_slots": r["_eligible"], "slot_id": r["_slot_id"],
+         "injury_status": r["injury_status"]}
         for r in ordered
     ]
     assigned = optimal_lineup(lineup_input, slot_counts or {})
@@ -506,6 +509,7 @@ def shape_projections(
     public_rows = [{k: v for k, v in r.items() if not k.startswith("_")} for r in ordered]
     return {
         "week": week,
+        "current_week": current_week,
         "players": public_rows,
         "current_total": current_total,
         "suggested_lineup": suggested,
