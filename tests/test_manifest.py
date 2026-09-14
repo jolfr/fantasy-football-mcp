@@ -50,14 +50,15 @@ def test_env_vars_and_form_fields_are_one_to_one():
     assert len(env) == len(m["user_config"])
 
 
-def test_secrets_are_sensitive_and_required():
+def test_secrets_are_sensitive_and_all_fields_optional():
     uc = _manifest()["user_config"]
     for key in ("espn_s2", "swid"):
         assert uc[key]["sensitive"] is True
-        assert uc[key]["required"] is True
-    assert uc["league_id"]["required"] is True
-    assert uc["season"]["required"] is False
-    assert uc["team_id"]["required"] is False
+    assert all(uc[key]["required"] is False for key in uc)
+
+
+def test_description_mentions_chat_setup():
+    assert "chat" in _manifest()["description"].lower()
 
 
 def test_instructions_name_the_extension_as_displayed():

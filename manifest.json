@@ -3,7 +3,7 @@
   "name": "fantasy-mcp",
   "display_name": "ESPN Fantasy Football",
   "version": "0.2.0",
-  "description": "Read-only access to your ESPN fantasy football team, matchup, free agents, and players.",
+  "description": "Read-only access to your ESPN fantasy football team, matchup, free agents, players, standings, and league scoring rules. Set it up in chat: just ask Claude to connect your league.",
   "author": {
     "name": "Thomas Jack Carroll"
   },
@@ -31,22 +31,22 @@
     "espn_s2": {
       "type": "string",
       "title": "espn_s2 cookie",
-      "description": "Copy from your browser's cookies for espn.com (dev tools → Application → Cookies) while logged in to ESPN. Step-by-step: https://github.com/jolfr/fantasy-football-mcp#get-your-espn-cookies-and-league-id",
+      "description": "Optional — or ask Claude to set up your league in chat. Copy from your browser's cookies for espn.com (dev tools → Application → Cookies) while logged in to ESPN. Step-by-step: https://github.com/jolfr/fantasy-football-mcp#get-your-espn-cookies-and-league-id",
       "sensitive": true,
-      "required": true
+      "required": false
     },
     "swid": {
       "type": "string",
       "title": "SWID cookie",
-      "description": "Same place as espn_s2. Keep the curly braces, e.g. {1234ABCD-...}.",
+      "description": "Optional — or ask Claude to set up your league in chat. Same place as espn_s2. Keep the curly braces, e.g. {1234ABCD-...}.",
       "sensitive": true,
-      "required": true
+      "required": false
     },
     "league_id": {
       "type": "number",
       "title": "League ID",
-      "description": "The leagueId=... number in your league's URL on fantasy.espn.com.",
-      "required": true
+      "description": "Optional — or ask Claude to set up your league in chat. The leagueId=... number in your league's URL on fantasy.espn.com.",
+      "required": false
     },
     "season": {
       "type": "number",
