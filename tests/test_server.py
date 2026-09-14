@@ -248,3 +248,20 @@ async def test_get_player_card_failure_still_returns_json(client, player_card_js
         result = await c.call_tool("get_player", {"player_id": 4242335})
     assert json.loads(result.content[0].text)["player_id"] == 4242335
     assert not (result.structured_content or {}).get("$prefab")
+
+
+@respx.mock
+async def test_get_league_settings_tool(client, league_settings_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_settings_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_league_settings", {})
+    assert result.data["league_name"] == "Test League"
+    assert result.data["scoring"]["ppr"] == 1
+    assert result.data["roster"]["lineup"]["FLEX"] == 1
+    assert route.calls.last.request.url.params.get_list("view") == ["mSettings"]
+
+
+async def test_six_tools_registered(client):
+    async with Client(server.mcp) as c:
+        names = sorted(t.name for t in await c.list_tools())
+    assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team", "get_player", "whoami"]

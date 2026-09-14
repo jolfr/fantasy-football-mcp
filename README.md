@@ -29,6 +29,7 @@ mentioning "cookies" — re-copy `espn_s2` and `SWID` from your browser.
 ## Tools
 
 - `whoami` — confirms auth; returns league name, season, your team.
+- `get_league_settings` — scoring rules (with a one-line summary), lineup slots, position limits, playoff format, waiver and trade rules.
 - `get_my_team` — your record, points, and roster with lineup slots.
 - `get_matchup` — this week's head-to-head: live score, projection, win
   probability, and both rosters with per-player actual/projected points.

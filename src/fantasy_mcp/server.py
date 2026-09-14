@@ -19,6 +19,7 @@ from fantasy_mcp.players import resolve_player
 from fantasy_mcp.shapes import (
     find_matchup,
     shape_free_agent,
+    shape_league_settings,
     shape_matchup,
     shape_player_card,
     shape_team,
@@ -39,9 +40,13 @@ waiver, or "who's available" questions, and compare candidates against the
 roster from get_my_team before recommending a move. Use get_player for
 questions about a specific player (history, outlook, who owns them); pass
 player_id from another tool's output when you have it. Only whoami,
-get_my_team, get_matchup, get_free_agents, and get_player exist. There is no
-standings, transaction, or past-week matchup data yet -- say so instead of
-inventing it.
+get_league_settings, get_my_team, get_matchup, get_free_agents, and get_player
+exist. There is no standings, transaction, or past-week matchup data yet --
+say so instead of inventing it.
+
+Call get_league_settings before start/sit, pickup, or trade advice so
+recommendations use this league's scoring (PPR or not) and roster limits;
+its result is stable for the season, so one call per conversation is enough.
 
 Nothing here can modify the team. If the user asks to make a move, describe
 what to do and let them do it on ESPN.
@@ -103,6 +108,25 @@ def whoami() -> dict[str, Any]:
         league = client.get("mTeam", "mSettings")
         team_id = client.find_my_team_id(league)
         return shape_whoami(league, team_id, client.settings)
+    except (EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool
+def get_league_settings() -> dict[str, Any]:
+    """League rules: scoring, roster construction, schedule/playoffs, waivers, trades.
+
+    Call this before start/sit, pickup, or trade advice so recommendations use
+    this league's scoring (scoring.ppr = points per reception; scoring.summary
+    is a one-line description; scoring.rules maps stat names -- the same names
+    get_player's game log uses -- to points, with unmapped ESPN ids as stat_<id>).
+    roster.lineup gives starting slots and bench/IR counts; roster.position_limits
+    caps how many of a position a team may roster. waivers describes the claim
+    system (budget is FAAB dollars when present); trades.deadline is a UTC date.
+    """
+    try:
+        client = _get_client()
+        return shape_league_settings(client.get("mSettings"))
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
