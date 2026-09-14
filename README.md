@@ -5,14 +5,17 @@ roster, this week's matchup, free agents, and player profiles.
 
 ## Install in Claude Desktop
 
-1. Download `fantasy-mcp.mcpb` from the
+1. Download `fantasy-mcp.mcpb` (under **Assets**) from the
    [latest release](https://github.com/jolfr/fantasy-football-mcp/releases/latest).
 2. Double-click the file (or in Claude Desktop: **Settings → Extensions →
-   Install Extension…** and pick it).
-3. Fill in the form: **espn_s2 cookie**, **SWID cookie**, and **League ID**.
+   Advanced settings → Install Extension…** and pick it).
+3. Claude Desktop will warn that the extension isn't signed by Anthropic —
+   that's expected for this project; choose Install.
+4. Fill in the form: **espn_s2 cookie**, **SWID cookie**, and **League ID**.
    See [Get your ESPN cookies and league ID](#get-your-espn-cookies-and-league-id)
-   below. Leave **Season** and **Team ID** blank unless you need them.
-4. Start a new chat and ask "how's my fantasy team doing?"
+   below. Leave **Season (optional)** and **Team ID (optional)** blank unless
+   you need them.
+5. Start a new chat and ask "how's my fantasy team doing?"
 
 The first launch takes a minute while Claude Desktop downloads Python and the
 server's dependencies. Nothing else needs to be installed.
@@ -26,23 +29,26 @@ your browser uses. They are private — do not share them.
 
 1. Go to [fantasy.espn.com](https://fantasy.espn.com/football/) and make sure
    you're logged in.
-2. Open DevTools: `Cmd+Option+I` on Mac, `F12` on Windows.
-3. Click the **Application** tab. In the left sidebar, expand
-   **Cookies** and click `https://fantasy.espn.com`.
-4. Find the rows named `espn_s2` and `SWID`. Double-click each **Value** to
-   select it, copy it, and paste it into the matching field in Claude
-   Desktop. Keep the curly braces on `SWID`.
+2. Open DevTools: right-click anywhere on the page and choose **Inspect**,
+   or press `Cmd+Option+I` (Mac) / `F12` or `Ctrl+Shift+I` (Windows).
+3. Click the **Application** tab. In the left sidebar, under **Storage**,
+   expand **Cookies** and click `https://fantasy.espn.com`.
+4. Find the rows named `espn_s2` and `SWID`. Click a row, then copy its
+   **Value** from the box below the table. Leave **Show URL-decoded**
+   unchecked — the decoded value won't work. Paste each into the matching
+   field in Claude Desktop, keeping the curly braces on `SWID`.
 
 ![Chrome DevTools showing the espn_s2 and SWID cookie rows](docs/images/chrome-cookies.png)
 
-### Safari
+### Safari (Mac)
 
 1. Enable the Develop menu once: **Safari → Settings → Advanced → Show
    features for web developers**.
 2. Go to [fantasy.espn.com](https://fantasy.espn.com/football/), logged in.
 3. **Develop → Show Web Inspector**, then the **Storage** tab → **Cookies**
    → `fantasy.espn.com`.
-4. Copy the **Value** of `espn_s2` and `SWID` as above.
+4. Click the `espn_s2` row and copy its **Value**; then do the same for
+   `SWID`.
 
 ### League ID
 
@@ -59,16 +65,22 @@ mentioning "cookies". Copy fresh values from your browser into
 
 ### Optional settings
 
-- **Season** — defaults to the current calendar year. Set it explicitly from
-  January to July if you want to keep looking at last season.
-- **Team ID** — normally auto-detected from your SWID. Set it only if the
-  server reports it can't find your team; it's the `teamId=` number in your
-  team's URL.
+- **Season (optional)** — defaults to the current calendar year. Set it
+  explicitly from January to July if you want to keep looking at last season.
+- **Team ID (optional)** — normally auto-detected from your SWID. Set it only
+  if the server reports it can't find your team; it's the `teamId=` number in
+  your team's URL.
 
 ## Use with Claude Code or other MCP clients
 
-Clone the repo and install [uv](https://docs.astral.sh/uv/) (Python 3.12+).
-`cp .env.example .env` and fill it in with the same values as above.
+Install [uv](https://docs.astral.sh/uv/) (Python 3.12+), then:
+
+```bash
+git clone https://github.com/jolfr/fantasy-football-mcp fantasy-mcp
+cd fantasy-mcp
+cp .env.example .env   # fill in the same values as above
+uv sync
+```
 
 `.mcp.json` in this repo registers the server automatically when you run
 `claude` here. For other projects or clients, add:
