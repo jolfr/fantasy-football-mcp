@@ -138,7 +138,12 @@ from fantasy_mcp.cards import player_card
 def get_player(...) -> ToolResult:
     ...
     profile = shape_player_card(entries[0], league)
-    return ToolResult(content=json.dumps(profile), structured_content=player_card(profile))
+    text = json.dumps(profile, ensure_ascii=False, separators=(",", ":"))  # byte-identical to the old dict return
+    try:  # build and serialize the card; a presentation bug must never cost the data
+        return ToolResult(content=text, structured_content=player_card(profile))
+    except Exception:
+        logger.exception("player_card failed to render; returning JSON only")
+        return ToolResult(content=text)
 ```
 Docstring gains one sentence: "In clients that support MCP Apps this
 renders as a card; the JSON profile is always returned as text." Error

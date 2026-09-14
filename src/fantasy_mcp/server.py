@@ -240,12 +240,11 @@ def get_player(name: str | None = None, player_id: int | None = None) -> ToolRes
         league.setdefault("seasonId", client.settings.season)
         profile = shape_player_card(entries[0], league)
         text = json.dumps(profile, ensure_ascii=False, separators=(",", ":"))
-        try:
-            card = player_card(profile)
-        except Exception:  # a presentation bug must never cost the caller the data
+        try:  # build AND serialize the card here; a presentation bug must never cost the data
+            return ToolResult(content=text, structured_content=player_card(profile))
+        except Exception:
             logger.exception("player_card failed to render; returning JSON only")
             return ToolResult(content=text)
-        return ToolResult(content=text, structured_content=card)
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 

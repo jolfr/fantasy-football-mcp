@@ -9,6 +9,7 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp import server
 from fantasy_mcp.espn import EspnClient
+from fantasy_mcp.shapes import shape_player_card
 from tests.conftest import LEAGUE_URL, PLAYERS_URL
 
 
@@ -166,8 +167,6 @@ async def test_get_player_by_name(client, cached_index, player_card_json):
     assert profile["owned_by"]["team_id"] == 12
     assert result.structured_content["$prefab"]["version"]
     assert result.structured_content["view"]["type"] == "Div"
-    from fantasy_mcp.shapes import shape_player_card
-
     assert profile == shape_player_card(player_card_json["players"][0], player_card_json)
     assert "\\u" not in result.content[0].text  # non-ASCII (e.g. em dashes) is not escaped
     assert not index_route.called  # cache injected, no index fetch

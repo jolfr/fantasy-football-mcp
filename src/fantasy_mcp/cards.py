@@ -132,6 +132,8 @@ def stat_line(stats: Stats | None) -> str:
     s = stats or {}
     segments = (_passing(s), _rushing(s), _receiving(s), _fumbles(s), _kicking(s), _defense(s))
     return " · ".join(seg for seg in segments if seg)
+
+
 _INJURY_VARIANT = {"ACTIVE": "success", "QUESTIONABLE": "warning", "DOUBTFUL": "warning"}
 _STATUS_TEXT = {"FREEAGENT": "Free agent", "WAIVERS": "On waivers"}
 _DASH = "—"
