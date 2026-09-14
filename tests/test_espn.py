@@ -11,7 +11,7 @@ from fantasy_mcp.espn import (
     EspnError,
     EspnNotFoundError,
 )
-from tests.conftest import LEAGUE_URL
+from tests.conftest import LEAGUE_URL, PLAYERS_URL
 
 
 @respx.mock
@@ -109,3 +109,31 @@ def test_find_my_team_id_no_match_raises(settings, league_json):
         EspnClient(stranger).find_my_team_id()
     assert "NOBODY" not in str(exc.value)
     assert "s2-cookie" not in str(exc.value)
+
+
+@respx.mock
+def test_get_players_index_request_shape(settings):
+    route = respx.get(PLAYERS_URL).mock(
+        return_value=httpx.Response(200, json=[{"id": 1, "fullName": "A"}])
+    )
+    data = EspnClient(settings).get_players_index()
+    assert data == [{"id": 1, "fullName": "A"}]
+    req = route.calls.last.request
+    assert req.url.params["scoringPeriodId"] == "0"
+    assert req.url.params["view"] == "players_wl"
+    assert json.loads(req.headers["x-fantasy-filter"]) == {"filterActive": {"value": True}}
+    assert "espn_s2=s2-cookie" in req.headers["cookie"]
+
+
+@respx.mock
+def test_get_players_index_rejects_non_list(settings):
+    respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json={"oops": 1}))
+    with pytest.raises(EspnError, match="players index"):
+        EspnClient(settings).get_players_index()
+
+
+@respx.mock
+def test_get_players_index_auth_error(settings):
+    respx.get(PLAYERS_URL).mock(return_value=httpx.Response(401, text="nope"))
+    with pytest.raises(EspnAuthError, match="cookies"):
+        EspnClient(settings).get_players_index()

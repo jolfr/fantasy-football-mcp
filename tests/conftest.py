@@ -12,6 +12,8 @@ LEAGUE_URL = (
     "/seasons/2026/segments/0/leagues/4242"
 )
 
+PLAYERS_URL = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/players"
+
 
 @pytest.fixture
 def settings() -> Settings:

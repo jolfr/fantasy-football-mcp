@@ -38,18 +38,19 @@ class EspnClient:
         headers = {"Accept": "application/json"}
         if fantasy_filter is not None:
             headers["X-Fantasy-Filter"] = json.dumps(fantasy_filter)
+        return self._request(self.league_url, [("view", v) for v in views], headers)
 
-        try:
-            response = httpx.get(
-                self.league_url,
-                params=[("view", v) for v in views],
-                cookies=self._cookies,
-                headers=headers,
-                timeout=TIMEOUT_SECONDS,
-            )
-        except httpx.RequestError as e:
-            raise EspnError(f"Could not reach ESPN: {type(e).__name__}") from e
-        return self._parse(response)
+    def get_players_index(self) -> list[dict[str, Any]]:
+        """Active players for the season (league-independent); ~2.6k entries."""
+        url = f"{BASE}/seasons/{self.settings.season}/players"
+        headers = {
+            "Accept": "application/json",
+            "X-Fantasy-Filter": json.dumps({"filterActive": {"value": True}}),
+        }
+        data = self._request(url, [("scoringPeriodId", "0"), ("view", "players_wl")], headers)
+        if not isinstance(data, list):
+            raise EspnError("Unexpected players index response from ESPN (not a list).")
+        return data
 
     def find_my_team_id(self, league: dict[str, Any] | None = None) -> int:
         """Return the configured team id, or the team whose owners include our SWID.
@@ -73,7 +74,16 @@ class EspnClient:
             "ESPN_SWID. Check ESPN_SWID or set ESPN_TEAM_ID explicitly."
         )
 
-    def _parse(self, response: httpx.Response) -> dict[str, Any]:
+    def _request(self, url: str, params: list[tuple[str, str]], headers: dict[str, str]) -> Any:
+        try:
+            response = httpx.get(
+                url, params=params, cookies=self._cookies, headers=headers, timeout=TIMEOUT_SECONDS
+            )
+        except httpx.RequestError as e:
+            raise EspnError(f"Could not reach ESPN: {type(e).__name__}") from e
+        return self._parse(response)
+
+    def _parse(self, response: httpx.Response) -> Any:
         status = response.status_code
         if status in (401, 403):
             raise EspnAuthError(
