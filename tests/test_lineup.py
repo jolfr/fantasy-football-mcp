@@ -83,3 +83,73 @@ def test_full_roster_size_is_fast():
     out = optimal_lineup(players, {0: 1, 2: 2, 4: 3, 6: 1, 7: 1, 23: 2, 16: 1, 17: 1, 20: 7})
     assert time.perf_counter() - t0 < 1.0
     assert sum(len(v) for v in out.values()) == 6  # 3 WR + OP + 2 FLEX; no QB/RB/TE/DST/K eligible
+
+
+def _brute_force_total(players, slot_counts):
+    """Reference: exhaustive search over slot instances (tiny inputs only)."""
+    from fantasy_mcp.lineup import INACTIVE_STATUSES, IR_SLOT, NON_STARTING_SLOTS
+
+    pool = [
+        p for p in players
+        if p.get("slot_id") != IR_SLOT and (p.get("injury_status") or "").upper() not in INACTIVE_STATUSES
+    ]
+    slots = [s for s, n in sorted(slot_counts.items()) if s not in NON_STARTING_SLOTS for _ in range(n)]
+
+    def rec(i, used):
+        if i == len(slots):
+            return 0.0
+        best = rec(i + 1, used)
+        for j, p in enumerate(pool):
+            if j in used or slots[i] not in p["eligible_slots"]:
+                continue
+            best = max(best, (p["projected"] or 0.0) + rec(i + 1, used | {j}))
+        return best
+
+    return rec(0, frozenset())
+
+
+def test_matches_brute_force_on_random_rosters():
+    import random
+
+    rng = random.Random(7)
+    slot_menu = [0, 2, 4, 6, 16, 17, 23, 7, 3, 5]
+    for _ in range(150):
+        n_players = rng.randint(1, 9)
+        players = []
+        for pid in range(1, n_players + 1):
+            eligible = rng.sample(slot_menu, rng.randint(1, 4)) + [20, 21]
+            players.append({
+                "player_id": pid,
+                "projected": rng.choice([None, 0.0, round(rng.uniform(0, 25), 2)]),
+                "eligible_slots": eligible,
+                "slot_id": rng.choice(eligible),
+                "injury_status": rng.choice(["ACTIVE", "ACTIVE", "OUT", None]),
+            })
+        counts = {s: rng.randint(0, 2) for s in rng.sample(slot_menu, rng.randint(1, 5))}
+        counts[20] = 5
+        out = optimal_lineup(players, counts)
+        total = sum(p["projected"] or 0.0 for rows in out.values() for p in rows)
+        assert abs(total - _brute_force_total(players, counts)) < 1e-6, (players, counts, out)
+        for slot, rows in out.items():
+            assert len(rows) <= counts[slot]
+            assert all(slot in p["eligible_slots"] for p in rows)
+        used = [p["player_id"] for rows in out.values() for p in rows]
+        assert len(used) == len(set(used))
+
+
+def test_two_count_slot_rows_ordered_by_projection_and_second_instance_correct():
+    players = [_p(1, 12.0, [2, 20]), _p(2, 17.7, [2, 20], slot=2), _p(3, 1.0, [2, 20])]
+    out = optimal_lineup(players, {2: 2, 20: 1})
+    assert [p["player_id"] for p in out[2]] == [2, 1]
+
+
+def test_large_dynasty_roster_is_fast():
+    import time
+
+    players = [
+        _p(i, float((i * 7) % 23), [0, 2, 3, 4, 5, 6, 7, 23, 25, 20, 21], slot=20) for i in range(1, 31)
+    ]
+    t0 = time.perf_counter()
+    out = optimal_lineup(players, {0: 1, 2: 2, 4: 3, 6: 1, 7: 2, 23: 2, 25: 1, 3: 1, 5: 1, 20: 10})
+    assert time.perf_counter() - t0 < 0.5
+    assert sum(len(v) for v in out.values()) == 14

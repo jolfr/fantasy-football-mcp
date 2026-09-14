@@ -62,12 +62,14 @@ def optimal_lineup(players: list[dict], slot_counts: dict[int, int]) -> dict[int
 `eligible_slots` (list[int]), `slot_id` (current), `injury_status`.
 Excludes players on IR (21) and players whose status is OUT /
 INJURY_RESERVE / SUSPENSION (ESPN may still project points for them).
-Solves the assignment exactly: memoized search over slot instances (in
-slot-id order) and the bitmask of used players, allowing an empty slot —
-correct for FLEX/superflex (OP) slots and dual-eligible players, where a
-dedicated-first greedy is provably wrong. Ties prefer keeping a current
-starter in their slot (tiny bonus). ≤ 10 slot instances × ≤ 18 players runs
-in milliseconds. Returns `{slot_id: [rows]}` for starting slots only.
+Solves the assignment exactly as a max-weight bipartite matching between
+slot instances and players (Hungarian algorithm; one zero-weight dummy
+column per slot instance lets a slot stay empty), so FLEX/superflex (OP)
+slots and dual-eligible players are handled correctly — a dedicated-first
+greedy is provably wrong there. Polynomial in roster size (30 players ×
+14 slot instances in well under 100 ms). Ties prefer keeping a current
+starter in their slot (tiny bonus). Each slot's rows are ordered by
+projection. Returns `{slot_id: [rows]}` for starting slots only.
 
 ### `shapes.py`
 ```python
