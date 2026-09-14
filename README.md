@@ -93,6 +93,8 @@ uv sync
 - `get_standings` — every team's rank, record, points, streak, ESPN projected
   finish, waiver priority, transaction counts, and playoff clinch status.
 - `get_my_team` — your record, points, and roster with lineup slots.
+- `get_team` — any other team's roster by id, name, or abbreviation, with owner
+  and current-week projections (trade targets, positional depth).
 - `get_matchup` — head-to-head for the current week (or any `week`): live score,
   projection, win probability, and both rosters with per-player actual/projected points.
 - `get_projections` — this (or any) week's ESPN projections for your roster with

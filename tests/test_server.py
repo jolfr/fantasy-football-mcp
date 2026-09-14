@@ -398,12 +398,6 @@ async def test_compare_players_all_unresolved_is_tool_error(client, cached_index
     assert not route.called
 
 
-async def test_nine_tools_registered(client):
-    async with Client(server.mcp) as c:
-        names = sorted(t.name for t in await c.list_tools())
-    assert names == ["compare_players", "get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
-                     "get_player", "get_projections", "get_standings", "whoami"]
-
 
 @respx.mock
 async def test_get_projections_fetches_and_caches_schedules(client, roster_settings_json, projections_json, pro_schedules_json):
@@ -453,3 +447,40 @@ async def test_get_matchup_rejects_bad_week(client, week):
         with pytest.raises(ToolError, match="week must be between 1 and 18"):
             await c.call_tool("get_matchup", {"week": week})
     assert not route.called
+
+
+@respx.mock
+@pytest.mark.parametrize("team, expected_id", [(5, 5), ("5", 5), ("MYS", 3), ("rival", 5)])
+async def test_get_team_tool(client, league_json, team, expected_id):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_team", {"team": team})
+    assert route.calls.last.request.url.params.get_list("view") == ["mTeam", "mRoster"]
+    assert result.data["team_id"] == expected_id
+    assert "owner" in result.data
+    if expected_id == 3:
+        assert next(p for p in result.data["roster"] if p["name"] == "Josh Allen")["projected"] == 22.4
+
+
+@respx.mock
+async def test_get_team_unknown_lists_teams(client, league_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match=r"Rival Team \(RIV, id 5\)"):
+            await c.call_tool("get_team", {"team": "nobody"})
+
+
+@respx.mock
+async def test_get_my_team_rows_now_include_projected(client, league_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_my_team", {})
+    assert result.data["owner"] == "Alex Owner"
+    assert next(p for p in result.data["roster"] if p["name"] == "Josh Allen")["projected"] == 22.4
+
+
+async def test_ten_tools_registered(client):
+    async with Client(server.mcp) as c:
+        names = sorted(t.name for t in await c.list_tools())
+    assert names == ["compare_players", "get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
+                     "get_player", "get_projections", "get_standings", "get_team", "whoami"]

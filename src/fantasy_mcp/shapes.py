@@ -75,10 +75,26 @@ def _slot_sort_key(entry: dict[str, Any]) -> tuple[int, int]:
     return (bucket, slot)
 
 
-def shape_team(team: dict[str, Any]) -> dict[str, Any]:
+def shape_team(
+    team: dict[str, Any],
+    *,
+    league: dict[str, Any] | None = None,
+    scoring_period: int | None = None,
+    season: int | None = None,
+) -> dict[str, Any]:
+    """Shape one team. With ``league`` given, adds ``owner`` and per-row ``projected``."""
     overall = team.get("record", {}).get("overall", {})
     entries = sorted(team.get("roster", {}).get("entries", []), key=_slot_sort_key)
-    return {
+    roster = [_shape_player(e) for e in entries]
+    if league is not None:
+        for row, entry in zip(roster, entries):
+            player = (entry.get("playerPoolEntry") or {}).get("player") or {}
+            row["projected"] = (
+                _stat(player, period=scoring_period, source=PROJECTION_SOURCE_ID, season=season)
+                if scoring_period is not None and season is not None
+                else None
+            )
+    shaped = {
         "team_id": team["id"],
         "name": team.get("name"),
         "abbrev": team.get("abbrev"),
@@ -89,8 +105,34 @@ def shape_team(team: dict[str, Any]) -> dict[str, Any]:
         },
         "points_for": overall.get("pointsFor", 0.0),
         "points_against": overall.get("pointsAgainst", 0.0),
-        "roster": [_shape_player(e) for e in entries],
+        "roster": roster,
     }
+    if league is not None:
+        shaped["owner"] = _owner_name(league, team)
+    return shaped
+
+
+def _describe_team(team: dict[str, Any]) -> str:
+    return f"{team.get('name')} ({team.get('abbrev')}, id {team.get('id')})"
+
+
+def find_team_by_name(league: dict[str, Any], query: str) -> dict[str, Any]:
+    """Resolve a team by abbreviation (exact), name (exact), then name-contains; else raise."""
+    teams = league.get("teams") or []
+    q = query.strip().casefold()
+    for matcher in (
+        lambda t: (t.get("abbrev") or "").casefold() == q,
+        lambda t: (t.get("name") or "").casefold() == q,
+        lambda t: q in (t.get("name") or "").casefold(),
+    ):
+        hits = [t for t in teams if matcher(t)]
+        if len(hits) == 1:
+            return hits[0]
+        if len(hits) > 1:
+            listed = "; ".join(_describe_team(t) for t in hits)
+            raise EspnError(f"{query!r} matches {len(hits)} teams: {listed}. Pass the team id.")
+    listed = "; ".join(_describe_team(t) for t in teams)
+    raise EspnError(f"No team matches {query!r}. Teams: {listed}.")
 
 
 def find_matchup(league: dict[str, Any], team_id: int, period: int) -> dict[str, Any]:

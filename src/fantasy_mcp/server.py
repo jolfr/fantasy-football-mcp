@@ -21,9 +21,10 @@ from fantasy_mcp.filters import (
     player_card_filter,
     player_ids_filter,
 )
-from fantasy_mcp.players import needs_index, resolve_player, resolve_players
+from fantasy_mcp.players import is_id_like, needs_index, resolve_player, resolve_players
 from fantasy_mcp.shapes import (
     find_matchup,
+    find_team_by_name,
     shape_comparison,
     shape_free_agent,
     shape_league_settings,
@@ -52,9 +53,10 @@ questions about a specific player (history, outlook, who owns them); pass
 player_id from another tool's output when you have it. For "X or Y?" questions
 call compare_players with all the names at once rather than get_player
 repeatedly. Use get_standings for records, rankings, the playoff picture, or
-waiver order. Only whoami, get_league_settings, get_standings, get_my_team,
-get_matchup, get_projections, get_free_agents, get_player, and compare_players
-exist. There is no transaction data yet -- say so instead of inventing it.
+waiver order. Use get_team for another manager's roster (trade targets,
+positional depth); get_standings lists team ids. Only whoami,
+get_league_settings, get_standings, get_my_team, get_team, get_matchup,
+get_projections, get_free_agents, get_player, and compare_players exist. There is no transaction data yet -- say so instead of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
@@ -199,7 +201,8 @@ def get_my_team() -> dict[str, Any]:
     Each roster row has: player_id (pass to get_player); name; position (the
     player's NFL position, e.g. QB/RB/WR);
     slot (the fantasy lineup slot — BENCH and IR mean not starting, anything else
-    is a starter); pro_team (NFL team abbreviation); injury_status. Rows are
+    is a starter); pro_team (NFL team abbreviation); injury_status; projected
+    (ESPN's projection for the current NFL week, null if unavailable). Rows are
     ordered starters first, then bench, then IR. Record and points are
     season-to-date for the configured season.
     """
@@ -207,12 +210,42 @@ def get_my_team() -> dict[str, Any]:
         client = _get_client()
         league = client.get("mTeam", "mRoster")
         team_id = client.find_my_team_id(league)
-        return shape_team(team_by_id(league, team_id))
+        return shape_team(
+            team_by_id(league, team_id),
+            league=league,
+            scoring_period=league.get("scoringPeriodId"),
+            season=league.get("seasonId"),
+        )
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
 
 MAX_WEEK = 18
+
+
+@mcp.tool
+def get_team(team: str | int) -> dict[str, Any]:
+    """Another league team's roster: record, points, and players with current-week projections.
+
+    Use this for trade targets, "who has the most RBs", or "what does Lucas's
+    team look like". team is a team id (from get_standings or get_matchup) or a
+    name / abbreviation (case-insensitive; a partial name works if unique).
+    Same shape as get_my_team: owner, record, points_for/against, and roster
+    rows with player_id, name, position, slot, pro_team, injury_status, and
+    projected for the current NFL week.
+    """
+    try:
+        client = _get_client()
+        league = client.get("mTeam", "mRoster")
+        if is_id_like(team):
+            found = team_by_id(league, int(str(team).strip()))
+        else:
+            found = find_team_by_name(league, str(team))
+        return shape_team(
+            found, league=league, scoring_period=league.get("scoringPeriodId"), season=league.get("seasonId")
+        )
+    except (EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
 
 
 @mcp.tool

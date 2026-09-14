@@ -607,3 +607,30 @@ def test_shape_matchup_final_past_week_uses_final_totals(matchup_json):
     assert out["status"] == "FINAL"
     assert out["my_team"]["score"] == 120.5 and out["opponent"]["score"] == 99.25
     assert out["my_team"]["projected_source"] == "espn"  # totalProjectedPoints still present
+
+
+def test_find_team_by_name_matches_abbrev_name_and_contains(league_json):
+    assert shapes.find_team_by_name(league_json, "mys")["id"] == 3
+    assert shapes.find_team_by_name(league_json, "rival team")["id"] == 5
+    assert shapes.find_team_by_name(league_json, "RIVAL")["id"] == 5
+
+
+def test_find_team_by_name_errors_list_teams(league_json):
+    with pytest.raises(EspnError, match=r"No team matches 'nobody'") as exc:
+        shapes.find_team_by_name(league_json, "nobody")
+    assert "My Squad (MYS, id 3)" in str(exc.value) and "Rival Team (RIV, id 5)" in str(exc.value)
+    league_json["teams"].append({"id": 9, "name": "Rival Two", "abbrev": "RV2"})
+    with pytest.raises(EspnError, match="matches 2 teams") as exc:
+        shapes.find_team_by_name(league_json, "rival")
+    assert "id 9" in str(exc.value)
+
+
+def test_shape_team_with_league_adds_owner_and_projection(league_json):
+    team = league_json["teams"][0]
+    out = shapes.shape_team(team, league=league_json, scoring_period=1, season=2026)
+    assert out["owner"] == "Alex Owner"
+    allen = next(p for p in out["roster"] if p["name"] == "Josh Allen")
+    assert allen["projected"] == 22.4
+    assert next(p for p in out["roster"] if p["name"] == "Bench Guy")["projected"] is None
+    plain = shapes.shape_team(team)
+    assert "owner" not in plain and "projected" not in plain["roster"][0]
