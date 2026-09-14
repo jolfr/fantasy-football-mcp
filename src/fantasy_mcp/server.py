@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.tools import ToolResult
 
+from fantasy_mcp.cards import player_card
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
 from fantasy_mcp.filters import FilterError, free_agent_filter, normalize_position, player_card_filter
@@ -196,8 +199,8 @@ def get_free_agents(
         raise ToolError(str(e)) from e
 
 
-@mcp.tool
-def get_player(name: str | None = None, player_id: int | None = None) -> dict[str, Any]:
+@mcp.tool(app=True)
+def get_player(name: str | None = None, player_id: int | None = None) -> ToolResult:
     """Full profile for one player: status, league ownership, season numbers, outlook, game log.
 
     Use this for "tell me about X", "how has X been doing", "who has X in my
@@ -216,7 +219,9 @@ def get_player(name: str | None = None, player_id: int | None = None) -> dict[st
     (zero-valued stats omitted). Covers this season and last. No news
     articles or opponent-matchup ratings. Name lookup uses a snapshot of ESPN's
     active-player list taken when the server started; a player signed since then
-    may not resolve by name but still works by player_id.
+    may not resolve by name but still works by player_id. In clients that
+    support MCP Apps this renders as a card; the JSON profile is always
+    returned as text.
     """
     if (name is None) == (player_id is None):
         raise ToolError("Pass exactly one of name or player_id.")
@@ -230,7 +235,8 @@ def get_player(name: str | None = None, player_id: int | None = None) -> dict[st
         if not entries:
             raise EspnError(f"ESPN returned no player with id {player_id}.")
         league.setdefault("seasonId", client.settings.season)
-        return shape_player_card(entries[0], league)
+        profile = shape_player_card(entries[0], league)
+        return ToolResult(content=json.dumps(profile), structured_content=player_card(profile))
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 

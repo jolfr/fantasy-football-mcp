@@ -160,9 +160,12 @@ async def test_get_player_by_name(client, cached_index, player_card_json):
     index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=[]))
     async with Client(server.mcp) as c:
         result = await c.call_tool("get_player", {"name": "jonathan taylor"})
-    assert result.data["player_id"] == 4242335
-    assert result.data["name"] == "Card Back"
-    assert result.data["owned_by"]["team_id"] == 12
+    profile = json.loads(result.content[0].text)
+    assert profile["player_id"] == 4242335
+    assert profile["name"] == "Card Back"
+    assert profile["owned_by"]["team_id"] == 12
+    assert result.structured_content["$prefab"]["version"]
+    assert result.structured_content["view"]["type"] == "Div"
     assert not index_route.called  # cache injected, no index fetch
     req = route.calls.last.request
     assert req.url.params.get_list("view") == ["kona_playercard", "mTeam", "mStatus"]
@@ -177,7 +180,7 @@ async def test_get_player_by_id_skips_index(client, player_card_json):
     index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=[]))
     async with Client(server.mcp) as c:
         result = await c.call_tool("get_player", {"player_id": 4242335})
-    assert result.data["player_id"] == 4242335
+    assert json.loads(result.content[0].text)["player_id"] == 4242335
     assert not index_route.called
 
 
@@ -220,3 +223,11 @@ async def test_get_player_unknown_id_is_tool_error(client):
     async with Client(server.mcp) as c:
         with pytest.raises(ToolError, match="no player with id 42"):
             await c.call_tool("get_player", {"player_id": 42})
+
+
+async def test_get_player_is_registered_as_an_app(client):
+    async with Client(server.mcp) as c:
+        tools = await c.list_tools()
+    tool = next(t for t in tools if t.name == "get_player")
+    assert tool.meta["ui"]["resourceUri"].startswith("ui://prefab/")
+    assert all("ui" not in (t.meta or {}) for t in tools if t.name != "get_player")

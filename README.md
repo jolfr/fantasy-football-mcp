@@ -38,6 +38,8 @@ mentioning "cookies" — re-copy `espn_s2` and `SWID` from your browser.
 - `get_player` — one player's full profile by name or id: league ownership,
   season totals/projection, ESPN outlook, and a per-week game log with stat
   lines for this season and last.
+  In clients that support MCP Apps (Claude Desktop, claude.ai) this renders
+  as an interactive card; elsewhere the JSON profile is returned as text.
 
 ## Develop
 
