@@ -103,7 +103,8 @@ def whoami() -> dict[str, Any]:
 def get_my_team() -> dict[str, Any]:
     """Return the user's fantasy team: season record, points, and full roster.
 
-    Each roster row has: name; position (the player's NFL position, e.g. QB/RB/WR);
+    Each roster row has: player_id (pass to get_player); name; position (the
+    player's NFL position, e.g. QB/RB/WR);
     slot (the fantasy lineup slot — BENCH and IR mean not starting, anything else
     is a starter); pro_team (NFL team abbreviation); injury_status. Rows are
     ordered starters first, then bench, then IR. Record and points are
@@ -131,7 +132,7 @@ def get_matchup() -> dict[str, Any]:
     opponent. Each team has: team_id, name, abbrev, score (fantasy points so far
     this week), projected (ESPN's live projection for the week's final score),
     win_probability (0-1, may be null), and roster. Each roster row has the same
-    fields as get_my_team (name, position, slot, pro_team, injury_status) plus
+    fields as get_my_team (player_id, name, position, slot, pro_team, injury_status) plus
     points (scored so far this week) and projected (ESPN's projection for this
     player this week; null if unavailable). Only rows whose slot is not BENCH or IR
     count toward score.
@@ -164,7 +165,8 @@ def get_free_agents(
     "owned" (most rostered across ESPN first, default) or "projected" (highest
     season projection first).
 
-    Each player row: name, position, pro_team, injury_status, status (FREEAGENT =
+    Each player row: player_id (pass to get_player), name, position, pro_team,
+    injury_status, status (FREEAGENT =
     add immediately; WAIVERS = must submit a claim), percent_owned (% of ESPN
     leagues rostering them), percent_change (ownership trend -- positive means
     being picked up), season_projected / season_points (full-season projected /
@@ -212,7 +214,9 @@ def get_player(name: str | None = None, player_id: int | None = None) -> dict[st
     week with points, projected (null until ESPN publishes it), and stats --
     raw counts such as rush_yds, targets, pass_td, fg_made_40_49, dst_sacks
     (zero-valued stats omitted). Covers this season and last. No news
-    articles or opponent-matchup ratings.
+    articles or opponent-matchup ratings. Name lookup uses a snapshot of ESPN's
+    active-player list taken when the server started; a player signed since then
+    may not resolve by name but still works by player_id.
     """
     if (name is None) == (player_id is None):
         raise ToolError("Pass exactly one of name or player_id.")
@@ -225,6 +229,7 @@ def get_player(name: str | None = None, player_id: int | None = None) -> dict[st
         entries = league.get("players") or []
         if not entries:
             raise EspnError(f"ESPN returned no player with id {player_id}.")
+        league.setdefault("seasonId", client.settings.season)
         return shape_player_card(entries[0], league)
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e

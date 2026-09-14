@@ -92,9 +92,11 @@ def get_players_index(self) -> list[dict[str, Any]]:
 ```
 `GET f"{BASE}/seasons/{season}/players"`, params `scoringPeriodId=0`,
 `view=players_wl`, header `X-Fantasy-Filter: {"filterActive": {"value": true}}`,
-same cookies/timeout/`_parse` error mapping. `_parse` currently returns
-`dict`; generalize its return annotation to `Any` (body may be a list). A
-non-list body → `EspnError("Unexpected players index response")`.
+same cookies/timeout/`_parse` error mapping. Both `get()` and `get_players_index()` go through a shared `_request(url,
+params, headers, *, not_found)` helper; `not_found` describes what a 404 means
+for that endpoint so the message points at `ESPN_SEASON` rather than
+`ESPN_LEAGUE_ID` for the index. `_parse` returns `Any`; `get()` rejects a
+non-object body and `get_players_index()` a non-list body with `EspnError`.
 
 ## `players.py` (pure)
 
@@ -148,7 +150,8 @@ New:
 ```python
 def shape_player_card(entry: dict, league: dict) -> dict:
 ```
-`season = league.get("seasonId")`, `period = league.get("scoringPeriodId")`.
+`season = league.get("seasonId")` (the tool fills it from `Settings.season` if
+ESPN omits it).
 
 ```json
 {
@@ -208,7 +211,7 @@ def get_player(name: str | None = None, player_id: int | None = None) -> dict[st
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 ```
-`filters.player_card_filter(player_id: int, season: int) -> dict` builds the
+`filters.player_card_filter(player_id: int, *, season: int) -> dict` builds the
 header JSON shown in ESPN facts (fresh dict per call).
 
 Docstring: when to use ("tell me about X", "how has X been doing", "who has
@@ -231,7 +234,7 @@ self-correct in one step.
 ## Testing
 
 Fixtures (trimmed real data, names scrubbed to placeholders):
-- `tests/fixtures/players_index.json`: 6 entries — "Tre Tucker" (WR, LV),
+- `tests/fixtures/players_index.json`: 7 entries — "Tre Tucker" (WR, LV),
   "Tucker Kraft" (TE, GB), "Justin Tucker" (K), "A.J. Brown" (WR, id 1001),
   "Jonathan Taylor" (RB, id 4242335), and a duplicate-name pair "Sam Smith"
   ×2 — each with `id`, `fullName`, `defaultPositionId`, `proTeamId`,
