@@ -145,9 +145,11 @@ not name `.env`; unchanged. `load_dotenv()` in the bundle directory finds no
 1. `actions/checkout`, `actions/setup-node` (LTS), `astral-sh/setup-uv`.
 2. Version guard (shell): `TAG=${GITHUB_REF_NAME#v}`; read the version from
    `pyproject.toml` and `manifest.json`; fail unless all three match.
-3. `uv sync && uv run pytest`.
+3. `uv sync --locked && uv run pytest`.
 4. `npx @anthropic-ai/mcpb validate manifest.json`
-5. `npx @anthropic-ai/mcpb pack . fantasy-mcp.mcpb`
+5. `npx @anthropic-ai/mcpb pack . fantasy-mcp.mcpb`, list the bundle contents,
+   and fail if the listing contains tests/, docs/, .venv/, .git/, .worktrees/,
+   or .env
 6. `gh release create "$GITHUB_REF_NAME" fantasy-mcp.mcpb --generate-notes`
    (uses `GITHUB_TOKEN`).
 

@@ -342,7 +342,7 @@ jobs:
 
       - name: Test
         run: |
-          uv sync
+          uv sync --locked
           uv run pytest -q
 
       - uses: actions/setup-node@v4
@@ -354,6 +354,7 @@ jobs:
           npx -y @anthropic-ai/mcpb@2.1.2 validate manifest.json
           npx -y @anthropic-ai/mcpb@2.1.2 pack . fantasy-mcp.mcpb
           unzip -l fantasy-mcp.mcpb
+          ! unzip -l fantasy-mcp.mcpb | grep -E ' (tests|docs|\.venv|\.git|\.worktrees)/| \.env$'
 
       - name: Create GitHub Release
         env:
