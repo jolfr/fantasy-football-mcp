@@ -43,6 +43,7 @@
           "entries": [
             {
               "lineupSlotId": 20,
+              "playerId": 201,
               "playerPoolEntry": {
                 "appliedStatTotal": 0.0,
                 "player": {
@@ -71,6 +72,7 @@
             },
             {
               "lineupSlotId": 2,
+              "playerId": 202,
               "playerPoolEntry": {
                 "appliedStatTotal": 18.5,
                 "player": {
@@ -99,6 +101,7 @@
             },
             {
               "lineupSlotId": 21,
+              "playerId": 203,
               "playerPoolEntry": {
                 "appliedStatTotal": 0.0,
                 "player": {
@@ -120,6 +123,7 @@
             },
             {
               "lineupSlotId": 4,
+              "playerId": 204,
               "playerPoolEntry": {
                 "appliedStatTotal": 7.0,
                 "player": {
@@ -144,6 +148,7 @@
           "entries": [
             {
               "lineupSlotId": 20,
+              "playerId": 205,
               "playerPoolEntry": {
                 "appliedStatTotal": 0.0,
                 "player": {
@@ -165,6 +170,7 @@
             },
             {
               "lineupSlotId": 2,
+              "playerId": 206,
               "playerPoolEntry": {
                 "appliedStatTotal": 13.8,
                 "player": {
@@ -193,6 +199,7 @@
             },
             {
               "lineupSlotId": 21,
+              "playerId": 207,
               "playerPoolEntry": {
                 "appliedStatTotal": 0.0,
                 "player": {
@@ -214,6 +221,7 @@
             },
             {
               "lineupSlotId": 4,
+              "playerId": 208,
               "playerPoolEntry": {
                 "appliedStatTotal": 5.6,
                 "player": {

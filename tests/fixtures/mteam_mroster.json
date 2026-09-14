@@ -19,18 +19,21 @@
         "entries": [
           {
             "lineupSlotId": 20,
+            "playerId": 101,
             "playerPoolEntry": {
               "player": {"fullName": "Bench Guy", "defaultPositionId": 2, "proTeamId": 6, "injuryStatus": "QUESTIONABLE"}
             }
           },
           {
             "lineupSlotId": 0,
+            "playerId": 102,
             "playerPoolEntry": {
               "player": {"fullName": "Josh Allen", "defaultPositionId": 1, "proTeamId": 2, "injuryStatus": "ACTIVE"}
             }
           },
           {
             "lineupSlotId": 23,
+            "playerId": 103,
             "playerPoolEntry": {
               "player": {"fullName": "Flex Player", "defaultPositionId": 3, "proTeamId": 99, "injuryStatus": "ACTIVE"}
             }

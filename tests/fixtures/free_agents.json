@@ -4,6 +4,7 @@
   "players": [
     {
       "status": "WAIVERS",
+      "id": 301,
       "onTeamId": 0,
       "ratings": {
         "0": {
@@ -57,6 +58,7 @@
     },
     {
       "status": "FREEAGENT",
+      "id": 302,
       "onTeamId": 0,
       "player": {
         "fullName": "Sparse Receiver",

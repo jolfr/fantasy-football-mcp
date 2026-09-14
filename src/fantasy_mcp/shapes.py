@@ -44,8 +44,10 @@ def shape_whoami(league: dict[str, Any], team_id: int, settings: Settings) -> di
 
 
 def _shape_player(entry: dict[str, Any]) -> dict[str, Any]:
-    player = entry.get("playerPoolEntry", {}).get("player", {})
+    pool_entry = entry.get("playerPoolEntry") or {}
+    player = pool_entry.get("player") or {}
     return {
+        "player_id": entry.get("playerId", pool_entry.get("id")),
         "name": player.get("fullName"),
         "position": ids.name(ids.POSITIONS, player.get("defaultPositionId", -1)),
         "slot": ids.name(ids.LINEUP_SLOTS, entry.get("lineupSlotId", -1)),
@@ -184,6 +186,7 @@ def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) ->
     ownership = player.get("ownership") or {}
     season_rating = (entry.get("ratings") or {}).get("0") or {}
     return {
+        "player_id": entry.get("id"),
         "name": player.get("fullName"),
         "position": ids.name(ids.POSITIONS, player.get("defaultPositionId", -1)),
         "pro_team": ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1)),

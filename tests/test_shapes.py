@@ -20,6 +20,7 @@ def test_shape_team_orders_starters_first_and_maps_ids(league_json):
 
     allen = shaped["roster"][0]
     assert allen == {
+        "player_id": 102,
         "name": "Josh Allen",
         "position": "QB",
         "slot": "QB",
@@ -97,6 +98,7 @@ def test_shape_matchup_full_shape(matchup_json):
         "Home IR Guy",
     ]
     assert me["roster"][0] == {
+        "player_id": 202,
         "name": "Home Starter One",
         "position": "RB",
         "slot": "RB",
@@ -194,6 +196,7 @@ def test_shape_free_agent_full_entry(free_agents_json):
     entry = free_agents_json["players"][0]
     out = shapes.shape_free_agent(entry, scoring_period=1, season=2026)
     assert out == {
+        "player_id": 301,
         "name": "Waiver Back",
         "position": "RB",
         "pro_team": "SF",
@@ -242,6 +245,11 @@ def test_shape_free_agent_tolerates_missing_player():
     assert out["position"] == "UNKNOWN_-1"
     assert out["status"] == "FREEAGENT"
     assert out["season_projected"] is None
+
+
+def test_shape_player_id_falls_back_to_pool_entry_id():
+    entry = {"lineupSlotId": 0, "playerPoolEntry": {"id": 555, "player": {"fullName": "X"}}}
+    assert shapes._shape_player(entry)["player_id"] == 555
 
 
 def test_stat_requires_exact_season_match():
