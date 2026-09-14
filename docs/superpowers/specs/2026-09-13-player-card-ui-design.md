@@ -102,7 +102,7 @@ PrefabApp(title=f"{name} — {position} {pro_team}")
     │   Metric("Owned", f"{percent_owned}%" or "—", delta=percent_change,
     │          trend=up/down/neutral by sign, trend_sentiment=positive/negative/neutral)
     ├ Muted(outlook)                                             # omitted if None
-    ├ Separator
+    ├ Separator                                                # omitted if neither chart nor table follows
     ├ LineChart(data=<this season's game_log rows ascending by week:
     │             {"week": "W1", "points": 25.1, "projected": 17.75}>,
     │           series=[ChartSeries("points","Points"), ChartSeries("projected","Projected")],

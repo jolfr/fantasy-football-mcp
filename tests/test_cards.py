@@ -169,3 +169,10 @@ def test_player_card_status_and_injury_variants(player_card_json):
     app = player_card(profile)
     assert {n["label"]: n["variant"] for n in _nodes(app, "Badge")}["QUESTIONABLE"] == "warning"
     assert [n["content"] for n in _nodes(app, "CardDescription")] == ["Rostered · 2025: 362.3 pts"]
+
+
+def test_player_card_separator_only_when_game_log_present(player_card_json):
+    assert len(_nodes(player_card(_profile(player_card_json)), "Separator")) == 1
+    empty = _profile(player_card_json)
+    empty["game_log"] = []
+    assert _nodes(player_card(empty), "Separator") == []
