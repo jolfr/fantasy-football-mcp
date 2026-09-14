@@ -38,8 +38,6 @@ your browser uses. They are private — do not share them.
    unchecked — the decoded value won't work. Paste each into the matching
    field in Claude Desktop, keeping the curly braces on `SWID`.
 
-![Chrome DevTools showing the espn_s2 and SWID cookie rows](docs/images/chrome-cookies.png)
-
 ### Safari (Mac)
 
 1. Enable the Develop menu once: **Safari → Settings → Advanced → Show
@@ -54,8 +52,6 @@ your browser uses. They are private — do not share them.
 
 Open your league on fantasy.espn.com. The number after `leagueId=` in the
 address bar is your League ID.
-
-![Address bar showing leagueId= in the URL](docs/images/league-id.png)
 
 ### When cookies expire
 
