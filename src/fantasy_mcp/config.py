@@ -25,6 +25,18 @@ class Settings:
 _REQUIRED = ("ESPN_S2", "ESPN_SWID", "ESPN_LEAGUE_ID")
 
 
+def _env(name: str) -> str | None:
+    """Return the variable's value, or None if unset, blank, or an unresolved ${...} template.
+
+    Claude Desktop passes "${user_config.x}" through literally when the user leaves
+    an optional extension field blank.
+    """
+    raw = os.environ.get(name, "").strip()
+    if not raw or (raw.startswith("${") and raw.endswith("}")):
+        return None
+    return raw
+
+
 def _int(name: str, raw: str) -> int:
     try:
         return int(raw)
@@ -36,7 +48,7 @@ def load_settings(load_dotenv_file: bool = True) -> Settings:
     if load_dotenv_file:
         load_dotenv()
 
-    missing = [k for k in _REQUIRED if not os.environ.get(k)]
+    missing = [k for k in _REQUIRED if _env(k) is None]
     if missing:
         raise ConfigError(
             "Missing required environment variables: " + ", ".join(missing)
@@ -44,13 +56,18 @@ def load_settings(load_dotenv_file: bool = True) -> Settings:
             "or, for a local checkout, copy .env.example to .env and fill them in."
         )
 
-    season_raw = os.environ.get("ESPN_SEASON")
-    team_raw = os.environ.get("ESPN_TEAM_ID")
+    espn_s2 = _env("ESPN_S2")
+    swid = _env("ESPN_SWID")
+    league_id_raw = _env("ESPN_LEAGUE_ID")
+    assert espn_s2 is not None and swid is not None and league_id_raw is not None
+
+    season_raw = _env("ESPN_SEASON")
+    team_raw = _env("ESPN_TEAM_ID")
 
     return Settings(
-        espn_s2=os.environ["ESPN_S2"],
-        swid=os.environ["ESPN_SWID"],
-        league_id=_int("ESPN_LEAGUE_ID", os.environ["ESPN_LEAGUE_ID"]),
+        espn_s2=espn_s2,
+        swid=swid,
+        league_id=_int("ESPN_LEAGUE_ID", league_id_raw),
         season=_int("ESPN_SEASON", season_raw) if season_raw else dt.date.today().year,
         team_id=_int("ESPN_TEAM_ID", team_raw) if team_raw else None,
     )

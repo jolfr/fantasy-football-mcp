@@ -68,3 +68,23 @@ def test_missing_required_points_at_desktop_and_env(monkeypatch):
     msg = str(exc.value)
     assert "Claude Desktop" in msg
     assert ".env" in msg
+
+
+def test_unresolved_placeholder_optionals_are_treated_as_unset(monkeypatch):
+    # Claude Desktop leaves "${user_config.x}" literal when the form field is blank.
+    _set(monkeypatch, ESPN_SEASON="${user_config.season}", ESPN_TEAM_ID="${user_config.team_id}")
+    s = load_settings(load_dotenv_file=False)
+    assert s.season == dt.date.today().year
+    assert s.team_id is None
+
+
+def test_whitespace_optionals_are_treated_as_unset(monkeypatch):
+    _set(monkeypatch, ESPN_SEASON="  ", ESPN_TEAM_ID=" ")
+    s = load_settings(load_dotenv_file=False)
+    assert s.team_id is None
+
+
+def test_unresolved_placeholder_required_reports_missing(monkeypatch):
+    _set(monkeypatch, ESPN_LEAGUE_ID="${user_config.league_id}")
+    with pytest.raises(ConfigError, match="Missing required"):
+        load_settings(load_dotenv_file=False)
