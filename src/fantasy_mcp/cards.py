@@ -10,7 +10,9 @@ Stats = dict[str, int | float]
 def _n(value: Any) -> str:
     """Render a stat number without a trailing .0."""
     number = float(value)
-    return str(int(number)) if number.is_integer() else f"{number:g}"
+    if number.is_integer():
+        return str(int(number))
+    return f"{number:.2f}".rstrip("0").rstrip(".")  # no scientific notation, max 2 dp
 
 
 def _passing(s: Stats) -> str | None:
@@ -19,6 +21,8 @@ def _passing(s: Stats) -> str | None:
     parts: list[str] = []
     if "pass_comp" in s and "pass_att" in s:
         parts.append(f"{_n(s['pass_comp'])}/{_n(s['pass_att'])}")
+    elif "pass_att" in s:
+        parts.append(f"{_n(s['pass_att'])} att")
     if "pass_yds" in s:
         parts.append(f"{_n(s['pass_yds'])} yds")
     if s.get("pass_td"):

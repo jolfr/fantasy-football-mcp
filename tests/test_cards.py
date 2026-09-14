@@ -51,3 +51,13 @@ def test_empty_and_unknown_only():
 
 def test_numbers_render_without_trailing_zero():
     assert stat_line({"rush_att": 5.0, "rush_yds": 31.0}) == "5 car 31 yds"
+
+
+def test_attempts_without_completions_still_render():
+    assert stat_line({"pass_att": 5, "pass_yds": 40}) == "5 att 40 yds"
+
+
+def test_large_and_fractional_numbers_never_use_scientific_notation():
+    assert stat_line({"dst_yards_allowed": 1234567}) == "1234567 yds allowed"
+    assert stat_line({"rush_yds": 123456.5}) == "123456.5 yds"
+    assert stat_line({"rush_yds": 3.14159}) == "3.14 yds"
