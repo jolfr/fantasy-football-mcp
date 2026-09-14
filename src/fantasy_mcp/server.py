@@ -171,7 +171,8 @@ def get_standings() -> dict[str, Any]:
 
     Use this for "where do I stand", "who's in the playoff picture", "who has
     the top waiver priority", or "who's been active on waivers/trades". Teams
-    are ordered by ESPN's playoff seed; is_me marks the user's team; owner is
+    are ordered by ESPN's playoff seed (falling back to wins then points for
+    when ESPN hasn't seeded yet, e.g. preseason); is_me marks the user's team; owner is
     the ESPN member name; projected_rank is ESPN's projected final standing;
     clinched is set once a team has clinched a playoff spot. Records and points
     update when ESPN finalizes each week (use get_matchup for live scores).
