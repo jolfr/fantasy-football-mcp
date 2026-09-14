@@ -41,7 +41,7 @@ def load_settings(load_dotenv_file: bool = True) -> Settings:
         raise ConfigError(
             "Missing required environment variables: " + ", ".join(missing)
             + ". Set them in the extension's settings in Claude Desktop, "
-            "or copy .env.example to .env and fill them in."
+            "or, for a local checkout, copy .env.example to .env and fill them in."
         )
 
     season_raw = os.environ.get("ESPN_SEASON")
