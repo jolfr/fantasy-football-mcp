@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from fastmcp import FastMCP
@@ -48,6 +49,8 @@ If a tool fails with a message mentioning "cookies", the user's ESPN session
 cookies have expired: tell them to re-copy espn_s2 and SWID from their browser
 into the server's .env file.
 """
+
+logger = logging.getLogger(__name__)
 
 mcp = FastMCP("fantasy-mcp", instructions=INSTRUCTIONS)
 
@@ -236,7 +239,13 @@ def get_player(name: str | None = None, player_id: int | None = None) -> ToolRes
             raise EspnError(f"ESPN returned no player with id {player_id}.")
         league.setdefault("seasonId", client.settings.season)
         profile = shape_player_card(entries[0], league)
-        return ToolResult(content=json.dumps(profile), structured_content=player_card(profile))
+        text = json.dumps(profile, ensure_ascii=False, separators=(",", ":"))
+        try:
+            card = player_card(profile)
+        except Exception:  # a presentation bug must never cost the caller the data
+            logger.exception("player_card failed to render; returning JSON only")
+            return ToolResult(content=text)
+        return ToolResult(content=text, structured_content=card)
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 

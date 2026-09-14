@@ -166,6 +166,10 @@ async def test_get_player_by_name(client, cached_index, player_card_json):
     assert profile["owned_by"]["team_id"] == 12
     assert result.structured_content["$prefab"]["version"]
     assert result.structured_content["view"]["type"] == "Div"
+    from fantasy_mcp.shapes import shape_player_card
+
+    assert profile == shape_player_card(player_card_json["players"][0], player_card_json)
+    assert "\\u" not in result.content[0].text  # non-ASCII (e.g. em dashes) is not escaped
     assert not index_route.called  # cache injected, no index fetch
     req = route.calls.last.request
     assert req.url.params.get_list("view") == ["kona_playercard", "mTeam", "mStatus"]
@@ -231,3 +235,17 @@ async def test_get_player_is_registered_as_an_app(client):
     tool = next(t for t in tools if t.name == "get_player")
     assert tool.meta["ui"]["resourceUri"].startswith("ui://prefab/")
     assert all("ui" not in (t.meta or {}) for t in tools if t.name != "get_player")
+
+
+@respx.mock
+async def test_get_player_card_failure_still_returns_json(client, player_card_json, monkeypatch):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=player_card_json))
+
+    def boom(profile):
+        raise RuntimeError("render bug")
+
+    monkeypatch.setattr(server, "player_card", boom)
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_player", {"player_id": 4242335})
+    assert json.loads(result.content[0].text)["player_id"] == 4242335
+    assert not (result.structured_content or {}).get("$prefab")
