@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches pyproject.toml and manifest.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PY=$(python3 -c 'import tomllib;print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          MF=$(python3 -c 'import json;print(json.load(open("manifest.json"))["version"])')
+          echo "tag=$TAG pyproject=$PY manifest=$MF"
+          if [ "$TAG" != "$PY" ] || [ "$TAG" != "$MF" ]; then
+            echo "::error::Version mismatch: tag $TAG, pyproject $PY, manifest $MF"
+            exit 1
+          fi
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Test
+        run: |
+          uv sync
+          uv run pytest -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Validate and pack
+        run: |
+          npx -y @anthropic-ai/mcpb@2.1.2 validate manifest.json
+          npx -y @anthropic-ai/mcpb@2.1.2 pack . fantasy-mcp.mcpb
+          unzip -l fantasy-mcp.mcpb
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" fantasy-mcp.mcpb \
+            --title "$GITHUB_REF_NAME" --generate-notes
