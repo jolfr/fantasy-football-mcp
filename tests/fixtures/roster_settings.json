@@ -1,0 +1,226 @@
+{
+  "id": 4242,
+  "seasonId": 2026,
+  "scoringPeriodId": 1,
+  "status": {
+    "currentMatchupPeriod": 1,
+    "latestScoringPeriod": 1
+  },
+  "settings": {
+    "name": "Test League",
+    "rosterSettings": {
+      "lineupSlotCounts": {
+        "0": 1,
+        "1": 0,
+        "2": 2,
+        "3": 0,
+        "4": 2,
+        "5": 0,
+        "6": 1,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 0,
+        "11": 0,
+        "12": 0,
+        "13": 0,
+        "14": 0,
+        "15": 0,
+        "16": 1,
+        "17": 1,
+        "18": 0,
+        "19": 0,
+        "20": 7,
+        "21": 1,
+        "22": 0,
+        "23": 1,
+        "24": 0
+      }
+    }
+  },
+  "teams": [
+    {
+      "id": 12,
+      "name": "My Matchup Team",
+      "abbrev": "MMT",
+      "owners": [
+        "{ABC-123}"
+      ],
+      "roster": {
+        "entries": [
+          {
+            "playerId": 4242335,
+            "lineupSlotId": 2,
+            "playerPoolEntry": {
+              "id": 4242335,
+              "player": {
+                "id": 4242335,
+                "fullName": "RB One",
+                "defaultPositionId": 2,
+                "proTeamId": 11,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  2,
+                  3,
+                  23,
+                  7,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": 4361370,
+            "lineupSlotId": 4,
+            "playerPoolEntry": {
+              "id": 4361370,
+              "player": {
+                "id": 4361370,
+                "fullName": "WR One",
+                "defaultPositionId": 3,
+                "proTeamId": 18,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  3,
+                  4,
+                  5,
+                  23,
+                  7,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": 4569618,
+            "lineupSlotId": 4,
+            "playerPoolEntry": {
+              "id": 4569618,
+              "player": {
+                "id": 4569618,
+                "fullName": "WR Two",
+                "defaultPositionId": 3,
+                "proTeamId": 20,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  3,
+                  4,
+                  5,
+                  23,
+                  7,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": 4426348,
+            "lineupSlotId": 0,
+            "playerPoolEntry": {
+              "id": 4426348,
+              "player": {
+                "id": 4426348,
+                "fullName": "QB One",
+                "defaultPositionId": 1,
+                "proTeamId": 28,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  0,
+                  7,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": 3916433,
+            "lineupSlotId": 20,
+            "playerPoolEntry": {
+              "id": 3916433,
+              "player": {
+                "id": 3916433,
+                "fullName": "WR Bench",
+                "defaultPositionId": 3,
+                "proTeamId": 30,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  3,
+                  4,
+                  5,
+                  23,
+                  7,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": 4361050,
+            "lineupSlotId": 6,
+            "playerPoolEntry": {
+              "id": 4361050,
+              "player": {
+                "id": 4361050,
+                "fullName": "TE One",
+                "defaultPositionId": 4,
+                "proTeamId": 19,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  5,
+                  6,
+                  23,
+                  7,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": -16033,
+            "lineupSlotId": 16,
+            "playerPoolEntry": {
+              "id": -16033,
+              "player": {
+                "id": -16033,
+                "fullName": "Def One",
+                "defaultPositionId": 16,
+                "proTeamId": 33,
+                "injuryStatus": null,
+                "eligibleSlots": [
+                  16,
+                  20,
+                  21
+                ]
+              }
+            }
+          },
+          {
+            "playerId": 4697745,
+            "lineupSlotId": 17,
+            "playerPoolEntry": {
+              "id": 4697745,
+              "player": {
+                "id": 4697745,
+                "fullName": "Kicker One",
+                "defaultPositionId": 5,
+                "proTeamId": 33,
+                "injuryStatus": "ACTIVE",
+                "eligibleSlots": [
+                  17,
+                  20,
+                  21
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

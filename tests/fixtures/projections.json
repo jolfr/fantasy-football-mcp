@@ -1,0 +1,369 @@
+{
+  "seasonId": 2026,
+  "scoringPeriodId": 2,
+  "players": [
+    {
+      "id": 4697745,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 4697745,
+        "fullName": "Kicker One",
+        "defaultPositionId": 5,
+        "proTeamId": 33,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          17,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 8.92
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 14.0
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 138.92
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 145.93
+          }
+        ]
+      }
+    },
+    {
+      "id": 4426348,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 4426348,
+        "fullName": "QB One",
+        "defaultPositionId": 1,
+        "proTeamId": 28,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          0,
+          7,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 19.4
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 17.66
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 311.06
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 327.68
+          }
+        ]
+      }
+    },
+    {
+      "id": 4569618,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 4569618,
+        "fullName": "WR Two",
+        "defaultPositionId": 3,
+        "proTeamId": 20,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          3,
+          4,
+          5,
+          23,
+          7,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 14.73
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 13.9
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 237.43
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 252.18
+          }
+        ]
+      }
+    },
+    {
+      "id": 4242335,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 4242335,
+        "fullName": "RB One",
+        "defaultPositionId": 2,
+        "proTeamId": 11,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          2,
+          3,
+          23,
+          7,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 17.68
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 25.1
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 302.8
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 315.58
+          }
+        ]
+      }
+    },
+    {
+      "id": -16033,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": -16033,
+        "fullName": "Def One",
+        "defaultPositionId": 16,
+        "proTeamId": 33,
+        "injuryStatus": null,
+        "eligibleSlots": [
+          16,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 6.82
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 8.0
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 114.16
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 119.15
+          }
+        ]
+      }
+    },
+    {
+      "id": 3916433,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 3916433,
+        "fullName": "WR Bench",
+        "defaultPositionId": 3,
+        "proTeamId": 30,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          3,
+          4,
+          5,
+          23,
+          7,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 10.02
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 12.2
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 171.54
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 181.9
+          }
+        ]
+      }
+    },
+    {
+      "id": 4361050,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 4361050,
+        "fullName": "TE One",
+        "defaultPositionId": 4,
+        "proTeamId": 19,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          5,
+          6,
+          23,
+          7,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 9.96
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 27.8
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 165.99
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 155.72
+          }
+        ]
+      }
+    },
+    {
+      "id": 4361370,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "player": {
+        "id": 4361370,
+        "fullName": "WR One",
+        "defaultPositionId": 3,
+        "proTeamId": 18,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          3,
+          4,
+          5,
+          23,
+          7,
+          20,
+          21
+        ],
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 15.25
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 28.2
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 240.38
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 249.76
+          }
+        ]
+      }
+    }
+  ]
+}
