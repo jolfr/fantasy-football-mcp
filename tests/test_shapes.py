@@ -357,3 +357,22 @@ def test_shape_player_card_no_last_season():
     assert out["season"] == {"year": 2026, "projected": None, "points": None, "positional_rank": None}
     assert out["game_log"] == []
     assert out["eligible_slots"] == []
+
+
+def test_headshot_url_for_player_and_dst():
+    assert shapes.headshot_url(4242335, "RB", "IND") == (
+        "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4242335.png&w=350&h=254"
+    )
+    assert shapes.headshot_url(-16033, "D/ST", "BAL") == "https://a.espncdn.com/i/teamlogos/nfl/500/bal.png"
+
+
+def test_headshot_url_missing_cases():
+    assert shapes.headshot_url(-1, "D/ST", "UNKNOWN_99") is None
+    assert shapes.headshot_url(-1, "D/ST", "FA") is None
+    assert shapes.headshot_url(None, "WR", "ARI") is None
+
+
+def test_shape_player_card_includes_headshot_url(player_card_json):
+    out = shapes.shape_player_card(player_card_json["players"][0], player_card_json)
+    assert out["headshot_url"].endswith("/4242335.png&w=350&h=254")
+    assert list(out)[:2] == ["player_id", "headshot_url"]

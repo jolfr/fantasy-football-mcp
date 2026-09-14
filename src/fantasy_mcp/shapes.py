@@ -18,6 +18,11 @@ PROJECTION_SOURCE_ID = 1
 BENCH_SLOT = 20
 IR_SLOT = 21
 
+HEADSHOT_URL = (
+    "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{player_id}.png&w=350&h=254"
+)
+TEAM_LOGO_URL = "https://a.espncdn.com/i/teamlogos/nfl/500/{team}.png"
+
 
 def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
     for team in league.get("teams", []):
@@ -246,6 +251,17 @@ def _game_log(player: dict[str, Any], season: int) -> list[dict[str, Any]]:
     return rows
 
 
+def headshot_url(player_id: int | None, position: str | None, pro_team: str | None) -> str | None:
+    """ESPN CDN image for a player (headshot) or a D/ST (team logo); None if unknown."""
+    if position == "D/ST":
+        if pro_team and pro_team != "FA" and not pro_team.startswith("UNKNOWN_"):
+            return TEAM_LOGO_URL.format(team=pro_team.lower())
+        return None
+    if player_id is None:
+        return None
+    return HEADSHOT_URL.format(player_id=player_id)
+
+
 def shape_player_card(entry: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
     """Shape one kona_playercard players[] entry into a full player profile."""
     season = league.get("seasonId", -1)
@@ -254,11 +270,15 @@ def shape_player_card(entry: dict[str, Any], league: dict[str, Any]) -> dict[str
     rank = ((entry.get("ratings") or {}).get("0") or {}).get("positionalRanking") or None
     team = _find_team(league, entry.get("onTeamId")) if entry.get("onTeamId") else None
     last_points = _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID, season=season - 1)
+    player_id = entry.get("id", player.get("id"))
+    position = ids.name(ids.POSITIONS, player.get("defaultPositionId", -1))
+    pro_team = ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1))
     return {
-        "player_id": entry.get("id", player.get("id")),
+        "player_id": player_id,
+        "headshot_url": headshot_url(player_id, position, pro_team),
         "name": player.get("fullName"),
-        "position": ids.name(ids.POSITIONS, player.get("defaultPositionId", -1)),
-        "pro_team": ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1)),
+        "position": position,
+        "pro_team": pro_team,
         "injury_status": player.get("injuryStatus"),
         "injured": player.get("injured"),
         "eligible_slots": [
