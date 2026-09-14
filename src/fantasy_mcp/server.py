@@ -53,7 +53,9 @@ what to do and let them do it on ESPN.
 
 If a tool fails with a message mentioning "cookies", the user's ESPN session
 cookies have expired: tell them to re-copy espn_s2 and SWID from their browser
-into the server's .env file.
+into wherever the server is configured: the extension's settings in Claude
+Desktop (Settings → Extensions → ESPN Fantasy Football), or the .env file for
+a local checkout.
 """
 
 logger = logging.getLogger(__name__)

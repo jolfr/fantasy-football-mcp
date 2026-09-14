@@ -9,6 +9,7 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp import server
 from fantasy_mcp.espn import EspnClient
+from fantasy_mcp.server import INSTRUCTIONS
 from fantasy_mcp.shapes import shape_player_card
 from tests.conftest import LEAGUE_URL, PLAYERS_URL
 
@@ -265,3 +266,9 @@ async def test_six_tools_registered(client):
     async with Client(server.mcp) as c:
         names = sorted(t.name for t in await c.list_tools())
     assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team", "get_player", "whoami"]
+
+
+def test_instructions_name_both_config_locations():
+    assert "Settings → Extensions" in INSTRUCTIONS
+    assert ".env" in INSTRUCTIONS
+    assert "server's .env file" not in INSTRUCTIONS

@@ -59,3 +59,12 @@ def test_repr_hides_secrets(monkeypatch):
     r = repr(load_settings(load_dotenv_file=False))
     assert "s2-cookie" not in r
     assert "ABC-123" not in r
+
+
+def test_missing_required_points_at_desktop_and_env(monkeypatch):
+    _set(monkeypatch, ESPN_S2=None)
+    with pytest.raises(ConfigError) as exc:
+        load_settings(load_dotenv_file=False)
+    msg = str(exc.value)
+    assert "Claude Desktop" in msg
+    assert ".env" in msg
