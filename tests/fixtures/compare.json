@@ -48,7 +48,10 @@
             "seasonId": 2026,
             "scoringPeriodId": 1,
             "statSourceId": 0,
-            "appliedTotal": 28.2
+            "appliedTotal": 28.2,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2025,
@@ -60,13 +63,19 @@
             "seasonId": 2025,
             "scoringPeriodId": 17,
             "statSourceId": 0,
-            "appliedTotal": 25.9
+            "appliedTotal": 25.9,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2025,
             "scoringPeriodId": 2,
             "statSourceId": 0,
-            "appliedTotal": 11.4
+            "appliedTotal": 11.4,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2026,
@@ -127,31 +136,46 @@
             "seasonId": 2026,
             "scoringPeriodId": 1,
             "statSourceId": 0,
-            "appliedTotal": 25.1
+            "appliedTotal": 25.1,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2025,
             "scoringPeriodId": 18,
             "statSourceId": 0,
-            "appliedTotal": 5.9
+            "appliedTotal": 5.9,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2025,
             "scoringPeriodId": 17,
             "statSourceId": 0,
-            "appliedTotal": 17.4
+            "appliedTotal": 17.4,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2025,
             "scoringPeriodId": 16,
             "statSourceId": 0,
-            "appliedTotal": 16.9
+            "appliedTotal": 16.9,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2025,
             "scoringPeriodId": 2,
             "statSourceId": 0,
-            "appliedTotal": 29.5
+            "appliedTotal": 29.5,
+            "stats": {
+              "210": 1.0
+            }
           },
           {
             "seasonId": 2026,

@@ -594,20 +594,38 @@ def shape_standings(league: dict[str, Any], my_team_id: int | None) -> dict[str,
     }
 
 
-def _weekly_actuals(player: dict[str, Any], season: int) -> list[tuple[int, float]]:
-    """(week, points) for this season's weekly actual entries, newest first."""
-    rows = [
-        (int(s.get("scoringPeriodId") or 0), float(s.get("appliedTotal") or 0.0))
+GAMES_PLAYED_STAT = "210"  # raw stat present only on weeks the player actually played
+
+
+def _weekly_actual_entries(player: dict[str, Any], season: int) -> list[dict[str, Any]]:
+    entries = [
+        s
         for s in player.get("stats") or []
-        if s.get("seasonId") == season and s.get("statSourceId") == ACTUAL_SOURCE_ID
+        if s.get("seasonId") == season
+        and s.get("statSourceId") == ACTUAL_SOURCE_ID
         and (s.get("scoringPeriodId") or 0) > 0
     ]
-    return sorted(rows, key=lambda r: -r[0])
+    return sorted(entries, key=lambda s: -(s.get("scoringPeriodId") or 0))
+
+
+def _weekly_actuals(player: dict[str, Any], season: int) -> list[tuple[int, float]]:
+    """(week, points) for this season's weekly actual entries, newest first."""
+    return [
+        (int(s.get("scoringPeriodId") or 0), float(s.get("appliedTotal") or 0.0))
+        for s in _weekly_actual_entries(player, season)
+    ]
+
+
+def _games_played(player: dict[str, Any], season: int) -> int:
+    """Weeks with a games-played stat line; ESPN also emits 0-point entries for weeks not played."""
+    return sum(
+        1 for s in _weekly_actual_entries(player, season) if (s.get("stats") or {}).get(GAMES_PLAYED_STAT)
+    )
 
 
 def _season_line(player: dict[str, Any], season: int) -> tuple[float | None, int, float | None]:
     points = _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID, season=season)
-    games = len(_weekly_actuals(player, season))
+    games = _games_played(player, season)
     avg = _round(points / games) if points is not None and games else None
     return points, games, avg
 

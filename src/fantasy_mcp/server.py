@@ -21,7 +21,7 @@ from fantasy_mcp.filters import (
     player_card_filter,
     player_ids_filter,
 )
-from fantasy_mcp.players import resolve_player, resolve_players
+from fantasy_mcp.players import needs_index, resolve_player, resolve_players
 from fantasy_mcp.shapes import (
     find_matchup,
     shape_comparison,
@@ -421,7 +421,7 @@ def compare_players(players: list[str | int], week: int | None = None) -> dict[s
         raise ToolError(f"week must be between 1 and {MAX_WEEK} (got {week}).")
     try:
         client = _get_client()
-        index = _get_players_index(client) if any(not isinstance(p, int) and not str(p).strip().lstrip("-").isdigit() for p in players) else []
+        index = _get_players_index(client) if needs_index(players) else []
         ids_, unresolved = resolve_players(players, index)
         if not ids_:
             raise EspnError("No players could be resolved: " + "; ".join(u["error"] for u in unresolved))

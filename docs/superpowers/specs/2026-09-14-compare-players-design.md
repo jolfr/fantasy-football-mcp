@@ -27,8 +27,9 @@ last season, availability in the league, and ownership trend — in one call.
 `filters.py`: `player_card_filter(player_ids: int | list[int], *, season)`
 — accepts one id or a list; single-id callers unchanged.
 
-`players.py`: `resolve_players(inputs: list[str | int], index) ->
-tuple[list[int], list[dict]]` — ints (or digit strings) pass through;
+`players.py`: `is_id_like(value)`, `needs_index(inputs)`, and
+`resolve_players(inputs: list[str | int], index) -> tuple[list[int],
+list[dict]]` — ints (or digit strings, negative allowed for D/ST) pass through;
 names go through `resolve_player`; failures collected as
 `{"input": <original>, "error": <message>}` instead of raising; result ids
 preserve input order and drop duplicates (first occurrence wins).
@@ -47,9 +48,11 @@ preserve input order and drop duplicates (first occurrence wins).
  "percent_owned": 99.9, "percent_change": 0.0}
 ```
 - `week.projected`: `_stat(period=week, source=1, season)`; `week.opponent/kickoff`: `game_context`.
-- `season.games` = number of weekly actual entries this season (weeks with
-  a stat line, including 0-point games); `avg = round(points/games, 2)` or
-  null when games is 0. Same for `last_season` (null when no entry).
+- `season.games` = number of weekly actual entries this season whose raw
+  `stats` map has games-played stat `210` (ESPN also emits 0-point entries
+  for weeks a player did not play — verified live: Olave 2025 wk18 0.0 has
+  no `210`); `avg = round(points/games, 2)` or null when games is 0. Same
+  for `last_season` (null when no season entry).
 - `last_3`: this season's weekly actual points, newest first, max 3.
 - `owned_by` is the team name string (not an object) — comparison rows are
   meant to be compact.

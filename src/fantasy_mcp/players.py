@@ -53,23 +53,28 @@ def resolve_player(name: str, index: list[dict[str, Any]]) -> int:
     )
 
 
+def is_id_like(value: Any) -> bool:
+    """True for an int or a digit string (optionally negative, as D/ST ids are)."""
+    return isinstance(value, int) or (isinstance(value, str) and value.strip().lstrip("-").isdigit())
+
+
+def needs_index(inputs: list[Any]) -> bool:
+    """True when any input must be resolved by name."""
+    return any(not is_id_like(value) for value in inputs)
+
+
 def resolve_players(
     inputs: list[str | int], index: list[dict[str, Any]]
 ) -> tuple[list[int], list[dict[str, Any]]]:
     """Resolve a mixed list of ids / names. Returns (ids in input order, unresolved entries)."""
-    ids: list[int] = []
+    resolved: list[int] = []
     unresolved: list[dict[str, Any]] = []
     for raw in inputs:
         try:
-            if isinstance(raw, int):
-                player_id = raw
-            elif isinstance(raw, str) and raw.strip().lstrip("-").isdigit():
-                player_id = int(raw.strip())
-            else:
-                player_id = resolve_player(str(raw), index)
+            player_id = int(str(raw).strip()) if is_id_like(raw) else resolve_player(str(raw), index)
         except EspnError as e:
             unresolved.append({"input": raw, "error": str(e)})
             continue
-        if player_id not in ids:
-            ids.append(player_id)
-    return ids, unresolved
+        if player_id not in resolved:
+            resolved.append(player_id)
+    return resolved, unresolved

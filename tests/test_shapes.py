@@ -570,7 +570,7 @@ def test_shape_comparison_rows(compare_json, pro_schedules_json):
     rec = rows[1]
     assert rec["league_status"] == "FREEAGENT" and rec["owned_by"] is None
     assert rec["week"] == {"projected": 15.55, "opponent": "@BAL", "kickoff": "2026-09-20T17:00:00Z"}
-    assert rec["last_season"] == {"points": 268.0, "games": 3, "avg": 89.33}
+    assert rec["last_season"] == {"points": 268.0, "games": 2, "avg": 134.0}  # wk18 0.0 has no games-played stat
     assert rec["last_3"] == [28.2]
 
 

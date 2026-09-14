@@ -1,7 +1,7 @@
 import pytest
 
 from fantasy_mcp.espn import EspnError
-from fantasy_mcp.players import resolve_player, resolve_players
+from fantasy_mcp.players import is_id_like, needs_index, resolve_player, resolve_players
 
 
 def test_exact_match(players_index):
@@ -66,3 +66,11 @@ def test_entry_without_name_does_not_crash(players_index):
         resolve_player("smith", players_index)
     assert "Sam Smithers" in str(exc.value)
     assert "None" not in str(exc.value)
+
+
+def test_negative_dst_ids_and_index_need():
+    assert is_id_like(-16033) and is_id_like("-16033") and not is_id_like("Ravens D/ST")
+    ids, unresolved = resolve_players(["-16033", 4242335], [])
+    assert ids == [-16033, 4242335] and unresolved == []
+    assert needs_index(["-16033", 4242335]) is False
+    assert needs_index(["-16033", "taylor"]) is True
