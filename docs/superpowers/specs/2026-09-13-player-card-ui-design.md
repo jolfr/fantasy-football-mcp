@@ -114,7 +114,8 @@ PrefabApp(title=f"{name} — {position} {pro_team}")
 
 Status line: `ONTEAM` → `Rostered by {owned_by.name}` (or `Rostered` if
 owned_by is None); `FREEAGENT` → `Free agent`; `WAIVERS` → `On waivers`;
-anything else → the raw value. If `last_season` present, append
+None → `Status unknown`; anything else → the raw value (a missing name
+renders as `Unknown player`). If `last_season` present, append
 ` · {year}: {points} pts`.
 
 Injury badge variant: `ACTIVE` → `success`; `QUESTIONABLE`/`DOUBTFUL` →
@@ -151,9 +152,10 @@ paths unchanged (`ToolError`).
 
 ## Errors
 
-Unchanged. `player_card` must not raise for any profile `shape_player_card`
-can produce; a bug there would turn a good ESPN response into a tool
-error, so the sparse-profile test is mandatory.
+Unchanged for the data path. `player_card` must not raise for any profile
+`shape_player_card` can produce (the sparse-profile test is mandatory); as
+defense in depth the tool also catches any card build/serialization error,
+logs it to stderr, and returns the JSON text alone.
 
 ## Testing
 
