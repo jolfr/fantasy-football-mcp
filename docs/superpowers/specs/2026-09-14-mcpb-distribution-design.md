@@ -201,4 +201,4 @@ New order:
   bundle; the `uv` runtime launched via the machine's existing
   `/opt/homebrew/bin/uv` (the no-uv-installed path is still unverified);
   `user_config` was injected via `env`; first `whoami` failed on the literal
-  `${user_config.season}` placeholder, fixed in `config.py`; re-test pending.
+  `${user_config.season}` placeholder, fixed in `config.py`; re-test with the rebuilt bundle passed — `whoami` and `get_matchup` returned live data with Season and Team ID blank.
