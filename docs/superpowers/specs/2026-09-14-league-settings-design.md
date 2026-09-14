@@ -20,10 +20,16 @@ trade advice uses the league's actual scoring (e.g. PPR vs standard).
   unlimited; `moveLimit` `-1` = unlimited; `lineupLocktimeType` e.g.
   `INDIVIDUAL_GAME`.
 - `scoringSettings.scoringType` e.g. `H2H_POINTS`; `scoringItems[]` of
-  `{statId, points, ...}` (46 items; ~26 non-zero). Scoring stat ids mostly
-  match `stats.STAT_NAMES`; ESPN uses `198` for the FG-50+ scoring item
-  (raw stat `74`). Ids `63, 201, 206, 209` are unmapped — leave as
-  `stat_<id>`.
+  `{statId, points, pointsOverrides: {positionId: points}}` (46 items).
+  D/ST items carry `points: 0` and the real value in `pointsOverrides["16"]`
+  — effective points = `points` if non-zero else `pointsOverrides["16"]`
+  if present. Scoring stat ids mostly match `stats.STAT_NAMES`; extras
+  verified against live scoring: `198` = FG 50+ (raw `74`); points-allowed
+  buckets `89` 0, `90` 1–6, `91` 7–13, `92` 14–17, `123` 28–34, `124`
+  35–45, `125` 46+; yards-allowed buckets `128` <100, `129` 100–199,
+  `130` 200–299 (Ravens: 251 yds → id 130 → +2, matches), `131` 300–349,
+  `132` 350–399, `133` 400–449, `134` 450–499, `135` 500–549, `136` 550+.
+  Ids `63, 201, 206, 209` remain unmapped — leave as `stat_<id>`.
 - `scheduleSettings`: `matchupPeriodCount`, `matchupPeriodLength`,
   `playoffTeamCount`, `playoffSeedingRule`.
 - `acquisitionSettings`: `acquisitionType`, `acquisitionBudget`,
@@ -33,8 +39,10 @@ trade advice uses the league's actual scoring (e.g. PPR vs standard).
 
 ## Changes
 
-`stats.py`: add `SCORING_STAT_NAMES = {**STAT_NAMES, 198: "fg_made_50_plus"}`
-and `scoring_name(stat_id) -> str` returning the name or `f"stat_{id}"`.
+`stats.py`: add `SCORING_STAT_NAMES = {**STAT_NAMES, 198: "fg_made_50_plus",
+<points/yards-allowed bucket names above, e.g. 89: "dst_points_allowed_0",
+130: "dst_yards_allowed_200_299", 136: "dst_yards_allowed_550_plus">}` and
+`scoring_name(stat_id) -> str` returning the name or `f"stat_{id}"`.
 
 `shapes.py`: `shape_league_settings(league: dict) -> dict`:
 
@@ -44,7 +52,7 @@ and `scoring_name(stat_id) -> str` returning the name or `f"stat_{id}"`.
   "scoring": {
     "type": "H2H_POINTS",
     "ppr": 1.0,                      // points for receptions (stat 53), 0.0 if absent
-    "rules": {"pass_yds": 0.04, ...}, // non-zero items only, name -> points (floats; ints when integral)
+    "rules": {"pass_yds": 0.04, ...}, // effective non-zero points only (see override rule), name -> points (ints when integral)
     "summary": "Full PPR · 25 pass yds/pt · 10 rush/rec yds/pt · 4-pt pass TD · 6-pt rush/rec TD · -2 INT · -2 fumble lost"
   },
   "roster": {
@@ -58,7 +66,7 @@ and `scoring_name(stat_id) -> str` returning the name or `f"stat_{id}"`.
                "current_week": 1, "final_week": 17},
   "waivers": {"type": "WAIVERS_TRADITIONAL", "budget": 100, "min_bid": 1,
               "waiver_hours": 24, "order_resets": true, "process_days": [...]},
-  "trades": {"deadline": "2026-11-30", "review_hours": 24, "veto_votes_required": 5}
+  "trades": {"deadline": "2026-12-02", "review_hours": 24, "veto_votes_required": 5}
 }
 ```
 
