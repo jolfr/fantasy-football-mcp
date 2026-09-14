@@ -81,6 +81,7 @@ def test_unresolved_placeholder_optionals_are_treated_as_unset(monkeypatch):
 def test_whitespace_optionals_are_treated_as_unset(monkeypatch):
     _set(monkeypatch, ESPN_SEASON="  ", ESPN_TEAM_ID=" ")
     s = load_settings(load_dotenv_file=False)
+    assert s.season == dt.date.today().year
     assert s.team_id is None
 
 
@@ -88,3 +89,10 @@ def test_unresolved_placeholder_required_reports_missing(monkeypatch):
     _set(monkeypatch, ESPN_LEAGUE_ID="${user_config.league_id}")
     with pytest.raises(ConfigError, match="Missing required"):
         load_settings(load_dotenv_file=False)
+
+
+def test_values_are_stripped(monkeypatch):
+    _set(monkeypatch, ESPN_S2=" s2 ", ESPN_TEAM_ID=" 7 ")
+    s = load_settings(load_dotenv_file=False)
+    assert s.espn_s2 == "s2"
+    assert s.team_id == 7

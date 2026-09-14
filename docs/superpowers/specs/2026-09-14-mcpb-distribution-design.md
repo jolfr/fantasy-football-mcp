@@ -39,8 +39,9 @@ other clients.
 - `user_config` fields are injected via `${user_config.KEY}` into
   `mcp_config.env` (or `args`). `sensitive: true` stores the value in the OS
   keychain and masks it in the form.
-- `config.py` already reads env vars before `.env`, so form values reach the
-  server with no config code changes.
+- `config.py` already reads env vars before `.env`; the only change needed was
+  treating unresolved `${...}` placeholders as unset (see Resolved note in
+  section 1).
 
 ## 1. Bundle layout
 
@@ -92,10 +93,10 @@ The repo root is the bundle. New files:
 }
 ```
 
-Open question to settle during the end-to-end test: whether Desktop passes an
-optional, blank `user_config` value as an empty string or omits the env var.
-`config.py` treats empty and missing identically (`os.environ.get(k)` falsy),
-so either works.
+Resolved 2026-09-14 in the end-to-end test: Desktop does not store blank
+optional fields at all and passes the `${user_config.season}` template
+through literally. `config.py` treats blank or unresolved `${...}` values as
+unset (`_env`).
 
 ### `.mcpbignore`
 
@@ -132,6 +133,8 @@ Text only. No new modules, dependencies, or runtime branching.
   or the `.env` file for a local checkout."
 - `config.py` `ConfigError` message: "Set them in the extension's settings in
   Claude Desktop, or copy `.env.example` to `.env` and fill them in."
+- `config.py`: `_env()` helper — unset, blank, or unresolved `${...}`
+  template values count as not set, for required and optional vars alike.
 
 `EspnAuthError` messages already say "refresh them from your browser" and do
 not name `.env`; unchanged. `load_dotenv()` in the bundle directory finds no
@@ -194,3 +197,8 @@ New order:
   `uv` type. Fallback if it does not: pass the values as `args` instead and
   add a tiny argv parser in `main()`.
 - Push a `v0.2.0` tag and confirm the Release carries `fantasy-mcp.mcpb`.
+- **Result (2026-09-14, macOS Claude Desktop):** installed from an unsigned
+  bundle; the `uv` runtime launched via the machine's existing
+  `/opt/homebrew/bin/uv` (the no-uv-installed path is still unverified);
+  `user_config` was injected via `env`; first `whoami` failed on the literal
+  `${user_config.season}` placeholder, fixed in `config.py`; re-test pending.

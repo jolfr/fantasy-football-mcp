@@ -48,7 +48,8 @@ def load_settings(load_dotenv_file: bool = True) -> Settings:
     if load_dotenv_file:
         load_dotenv()
 
-    missing = [k for k in _REQUIRED if _env(k) is None]
+    required = {k: v for k in _REQUIRED if (v := _env(k)) is not None}
+    missing = [k for k in _REQUIRED if k not in required]
     if missing:
         raise ConfigError(
             "Missing required environment variables: " + ", ".join(missing)
@@ -56,18 +57,13 @@ def load_settings(load_dotenv_file: bool = True) -> Settings:
             "or, for a local checkout, copy .env.example to .env and fill them in."
         )
 
-    espn_s2 = _env("ESPN_S2")
-    swid = _env("ESPN_SWID")
-    league_id_raw = _env("ESPN_LEAGUE_ID")
-    assert espn_s2 is not None and swid is not None and league_id_raw is not None
-
     season_raw = _env("ESPN_SEASON")
     team_raw = _env("ESPN_TEAM_ID")
 
     return Settings(
-        espn_s2=espn_s2,
-        swid=swid,
-        league_id=_int("ESPN_LEAGUE_ID", league_id_raw),
+        espn_s2=required["ESPN_S2"],
+        swid=required["ESPN_SWID"],
+        league_id=_int("ESPN_LEAGUE_ID", required["ESPN_LEAGUE_ID"]),
         season=_int("ESPN_SEASON", season_raw) if season_raw else dt.date.today().year,
         team_id=_int("ESPN_TEAM_ID", team_raw) if team_raw else None,
     )
