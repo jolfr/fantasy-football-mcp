@@ -91,6 +91,8 @@ Clone the repo and install [uv](https://docs.astral.sh/uv/) (Python 3.12+).
 - `get_player` — one player's full profile by name or id: league ownership,
   season totals/projection, ESPN outlook, and a per-week game log with stat
   lines for this season and last.
+  In clients that support MCP Apps (Claude Desktop, claude.ai) this renders
+  as an interactive card; elsewhere the JSON profile is returned as text.
 
 Nothing here can change your team; it is read-only.
 
