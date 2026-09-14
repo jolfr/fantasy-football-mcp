@@ -1,0 +1,134 @@
+{
+  "seasonId": 2026,
+  "scoringPeriodId": 1,
+  "teams": [
+    {
+      "id": 12,
+      "name": "My Matchup Team",
+      "abbrev": "MMT",
+      "owners": [
+        "{ABC-123}"
+      ]
+    }
+  ],
+  "players": [
+    {
+      "id": 4242335,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "ratings": {
+        "0": {
+          "positionalRanking": 4,
+          "totalRanking": 6
+        }
+      },
+      "player": {
+        "id": 4242335,
+        "fullName": "Card Back",
+        "defaultPositionId": 2,
+        "proTeamId": 11,
+        "injuryStatus": "ACTIVE",
+        "injured": false,
+        "eligibleSlots": [
+          2,
+          3,
+          23,
+          7,
+          20,
+          21
+        ],
+        "seasonOutlook": "Placeholder outlook: workhorse back with elite volume.",
+        "ownership": {
+          "percentOwned": 99.91,
+          "percentStarted": 99.61,
+          "percentChange": 0.0,
+          "averageDraftPosition": 6.36
+        },
+        "stats": [
+          {
+            "seasonId": 2024,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 777.7
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 1,
+            "statSourceId": 0,
+            "appliedTotal": 25.1,
+            "stats": {
+              "23": 19.0,
+              "24": 98.0,
+              "25": 2.0,
+              "41": 3.0,
+              "42": 23.0,
+              "53": 3.0,
+              "58": 4.0,
+              "68": 1.0,
+              "72": 1.0,
+              "156": 1.0,
+              "210": 1.0
+            }
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 1,
+            "statSourceId": 1,
+            "appliedTotal": 17.75
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 25.1
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 315.58
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 362.3
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 18,
+            "statSourceId": 0,
+            "appliedTotal": 5.9,
+            "stats": {
+              "23": 14.0,
+              "24": 26.0,
+              "41": 2.0,
+              "42": 13.0,
+              "53": 2.0,
+              "58": 2.0,
+              "156": 1.0,
+              "210": 1.0
+            }
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 17,
+            "statSourceId": 0,
+            "appliedTotal": 17.4,
+            "stats": {
+              "23": 21.0,
+              "24": 70.0,
+              "25": 1.0,
+              "41": 3.0,
+              "42": 14.0,
+              "53": 3.0,
+              "58": 6.0,
+              "156": 1.0,
+              "210": 1.0
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

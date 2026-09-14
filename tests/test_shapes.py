@@ -261,3 +261,83 @@ def test_stat_requires_exact_season_match():
     assert shapes._stat(player, period=0, source=1, season=2026) == 100.0
     assert shapes._stat(player, period=0, source=1, season=2024) is None
     assert shapes._stat(player, period=0, source=0, season=2026) is None
+
+
+def test_shape_player_card_full(player_card_json):
+    entry = player_card_json["players"][0]
+    out = shapes.shape_player_card(entry, player_card_json)
+
+    assert {k: out[k] for k in ("player_id", "name", "position", "pro_team", "injury_status", "injured")} == {
+        "player_id": 4242335,
+        "name": "Card Back",
+        "position": "RB",
+        "pro_team": "IND",
+        "injury_status": "ACTIVE",
+        "injured": False,
+    }
+    assert out["eligible_slots"] == ["RB", "RB/WR", "FLEX", "OP"]
+    assert out["league_status"] == "ONTEAM"
+    assert out["owned_by"] == {"team_id": 12, "name": "My Matchup Team"}
+    assert out["ownership"] == {
+        "percent_owned": 99.9,
+        "percent_started": 99.6,
+        "percent_change": 0.0,
+        "adp": 6.4,
+    }
+    assert out["season"] == {"year": 2026, "projected": 315.58, "points": 25.1, "positional_rank": 4}
+    assert out["last_season"] == {"year": 2025, "points": 362.3}
+    assert out["outlook"] == "Placeholder outlook: workhorse back with elite volume."
+
+    log = out["game_log"]
+    assert [(g["season"], g["week"]) for g in log] == [(2026, 1), (2025, 18), (2025, 17)]
+    assert log[0] == {
+        "season": 2026,
+        "week": 1,
+        "points": 25.1,
+        "projected": 17.75,
+        "stats": {
+            "rush_att": 19,
+            "rush_yds": 98,
+            "rush_td": 2,
+            "rec_yds": 23,
+            "receptions": 3,
+            "targets": 4,
+            "fumbles": 1,
+            "fumbles_lost": 1,
+            "team_loss": 1,
+            "games_played": 1,
+        },
+    }
+    assert log[1]["projected"] is None
+    assert log[1]["stats"]["rush_yds"] == 26
+    assert "41" not in str(log)  # unmapped raw id never leaks
+
+
+def test_shape_player_card_unrostered_and_sparse(player_card_json):
+    entry = player_card_json["players"][0]
+    entry["onTeamId"] = 0
+    entry["status"] = "WAIVERS"
+    entry["ratings"]["0"]["positionalRanking"] = 0
+    entry["player"]["seasonOutlook"] = ""
+    del entry["player"]["ownership"]
+    out = shapes.shape_player_card(entry, player_card_json)
+    assert out["owned_by"] is None
+    assert out["league_status"] == "WAIVERS"
+    assert out["season"]["positional_rank"] is None
+    assert out["outlook"] is None
+    assert out["ownership"] == {
+        "percent_owned": None,
+        "percent_started": None,
+        "percent_change": None,
+        "adp": None,
+    }
+
+
+def test_shape_player_card_no_last_season():
+    league = {"seasonId": 2026, "scoringPeriodId": 1, "teams": []}
+    entry = {"id": 9, "onTeamId": 0, "status": "FREEAGENT", "player": {"fullName": "Rookie", "stats": []}}
+    out = shapes.shape_player_card(entry, league)
+    assert out["last_season"] is None
+    assert out["season"] == {"year": 2026, "projected": None, "points": None, "positional_rank": None}
+    assert out["game_log"] == []
+    assert out["eligible_slots"] == []

@@ -44,3 +44,8 @@ def free_agents_json() -> dict:
 @pytest.fixture
 def players_index() -> list:
     return json.loads((FIXTURES / "players_index.json").read_text())
+
+
+@pytest.fixture
+def player_card_json() -> dict:
+    return json.loads((FIXTURES / "player_card.json").read_text())

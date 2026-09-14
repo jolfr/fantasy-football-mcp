@@ -7,6 +7,7 @@ from typing import Any
 from fantasy_mcp import ids
 from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
+from fantasy_mcp.stats import shape_stat_line
 
 # player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
 # and statSourceId (0 = actual, 1 = projected).
@@ -208,4 +209,72 @@ def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) ->
         ),
         # ESPN reports 0 for unranked players; surface that as null, not "rank 0".
         "positional_rank": season_rating.get("positionalRanking") or None,
+    }
+
+
+_NON_STARTING_SLOTS = {20, 21}  # BENCH, IR
+
+
+def _game_log(player: dict[str, Any], season: int) -> list[dict[str, Any]]:
+    seasons = {season, season - 1}
+    projections = {
+        (s.get("seasonId"), s.get("scoringPeriodId")): _round(s.get("appliedTotal"))
+        for s in player.get("stats") or []
+        if s.get("statSourceId") == PROJECTION_SOURCE_ID and (s.get("scoringPeriodId") or 0) > 0
+    }
+    rows = []
+    for s in player.get("stats") or []:
+        year, week = s.get("seasonId"), s.get("scoringPeriodId") or 0
+        if s.get("statSourceId") != ACTUAL_SOURCE_ID or week <= 0 or year not in seasons:
+            continue
+        rows.append(
+            {
+                "season": year,
+                "week": week,
+                "points": _round(s.get("appliedTotal")),
+                "projected": projections.get((year, week)),
+                "stats": shape_stat_line(s.get("stats")),
+            }
+        )
+    rows.sort(key=lambda r: (r["season"], r["week"]), reverse=True)
+    return rows
+
+
+def shape_player_card(entry: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
+    """Shape one kona_playercard players[] entry into a full player profile."""
+    season = league.get("seasonId", -1)
+    player = entry.get("player") or {}
+    ownership = player.get("ownership") or {}
+    rank = ((entry.get("ratings") or {}).get("0") or {}).get("positionalRanking") or None
+    team = _find_team(league, entry.get("onTeamId")) if entry.get("onTeamId") else None
+    last_points = _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID, season=season - 1)
+    return {
+        "player_id": entry.get("id", player.get("id")),
+        "name": player.get("fullName"),
+        "position": ids.name(ids.POSITIONS, player.get("defaultPositionId", -1)),
+        "pro_team": ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1)),
+        "injury_status": player.get("injuryStatus"),
+        "injured": player.get("injured"),
+        "eligible_slots": [
+            ids.name(ids.LINEUP_SLOTS, slot)
+            for slot in player.get("eligibleSlots") or []
+            if slot not in _NON_STARTING_SLOTS
+        ],
+        "league_status": entry.get("status"),
+        "owned_by": {"team_id": team.get("id"), "name": team.get("name")} if team else None,
+        "ownership": {
+            "percent_owned": _round(ownership.get("percentOwned"), ndigits=1),
+            "percent_started": _round(ownership.get("percentStarted"), ndigits=1),
+            "percent_change": _round(ownership.get("percentChange"), ndigits=1),
+            "adp": _round(ownership.get("averageDraftPosition"), ndigits=1),
+        },
+        "season": {
+            "year": season,
+            "projected": _stat(player, period=SEASON_PERIOD, source=PROJECTION_SOURCE_ID, season=season),
+            "points": _stat(player, period=SEASON_PERIOD, source=ACTUAL_SOURCE_ID, season=season),
+            "positional_rank": rank,
+        },
+        "last_season": {"year": season - 1, "points": last_points} if last_points is not None else None,
+        "outlook": player.get("seasonOutlook") or None,
+        "game_log": _game_log(player, season),
     }
