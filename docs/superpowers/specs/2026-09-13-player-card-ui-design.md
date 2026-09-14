@@ -40,8 +40,8 @@ images/headshots.
   page_size), DataTableColumn(key, header, sortable, align)`;
   `prefab_ui.components.charts`: `LineChart(data, series, x_axis, height,
   show_dots, show_legend, show_tooltip)`, `ChartSeries(data_key, label)`.
-- `Badge.variant` ∈ default, secondary, destructive, outline (plus any
-  others the installed version lists — use only these four).
+- `Badge.variant` ∈ default, secondary, destructive, success, warning, info,
+  outline, ghost.
 - `Metric.trend` ∈ up/down/neutral; `trend_sentiment` ∈ positive/negative/neutral.
 - Clients without MCP Apps support (e.g. the Claude Code terminal) show the
   text content only — identical to today's behavior.
@@ -117,8 +117,8 @@ owned_by is None); `FREEAGENT` → `Free agent`; `WAIVERS` → `On waivers`;
 anything else → the raw value. If `last_season` present, append
 ` · {year}: {points} pts`.
 
-Injury badge variant: `ACTIVE` → `outline`; `QUESTIONABLE`/`DOUBTFUL` →
-`secondary`; anything else non-null (`OUT`, `INJURY_RESERVE`, `SUSPENSION`,
+Injury badge variant: `ACTIVE` → `success`; `QUESTIONABLE`/`DOUBTFUL` →
+`warning`; anything else non-null (`OUT`, `INJURY_RESERVE`, `SUSPENSION`,
 …) → `destructive`.
 
 Metric trend from `percent_change`: `> 0` up/positive, `< 0`
@@ -161,14 +161,14 @@ error, so the sparse-profile test is mandatory.
   `shape_player_card(player_card_json["players"][0], player_card_json)`):
   serialize with `app.model_dump(by_alias=True, exclude_none=True)` and
   assert: title contains "Card Back"; a Badge with label "RB · IND" and one
-  with "ACTIVE" variant outline; CardDescription "Rostered by My Matchup
+  with "ACTIVE" variant success; CardDescription "Rostered by My Matchup
   Team · 2025: 362.3 pts"; Metric values 25.1 / 315.58 / "#4" / "99.9%";
   LineChart data has 1 row (`W1`); DataTable has 3 rows and the first
   row's Line is the RB string above.
 - Sparse profile (all nulls, empty game_log, `league_status` "FREEAGENT")
   → no exception; description "Free agent"; no LineChart/DataTable/Muted
   nodes present; metrics show "—".
-- Injury variants: OUT → destructive; QUESTIONABLE → secondary.
+- Injury variants: OUT → destructive; QUESTIONABLE → warning.
 
 `tests/test_server.py` (existing `get_player` tests adjusted):
 - `json.loads(result.content[0].text)` equals the profile
