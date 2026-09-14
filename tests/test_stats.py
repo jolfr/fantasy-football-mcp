@@ -20,3 +20,7 @@ def test_names_are_unique_snake_case():
     names = list(STAT_NAMES.values())
     assert len(names) == len(set(names))
     assert all(n == n.lower() and " " not in n for n in names)
+
+
+def test_negative_values_are_kept():
+    assert shape_stat_line({"23": -1.0}) == {"rush_att": -1}

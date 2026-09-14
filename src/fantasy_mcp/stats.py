@@ -58,9 +58,9 @@ STAT_NAMES: dict[int, str] = {
 }
 
 
-def shape_stat_line(raw: dict[str, Any] | None) -> dict[str, float]:
+def shape_stat_line(raw: dict[str, Any] | None) -> dict[str, int | float]:
     """Map ESPN ``{stat_id: value}`` to ``{name: value}``; drop unmapped ids and zeros."""
-    line: dict[str, float] = {}
+    line: dict[str, int | float] = {}
     for key, value in (raw or {}).items():
         try:
             name = STAT_NAMES[int(key)]
