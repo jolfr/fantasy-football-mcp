@@ -1,0 +1,184 @@
+{
+  "seasonId": 2026,
+  "scoringPeriodId": 2,
+  "status": {
+    "currentMatchupPeriod": 1
+  },
+  "teams": [
+    {
+      "id": 12,
+      "name": "My Matchup Team",
+      "abbrev": "MMT",
+      "owners": [
+        "{ABC-123}"
+      ]
+    }
+  ],
+  "players": [
+    {
+      "id": 4361370,
+      "onTeamId": 0,
+      "status": "FREEAGENT",
+      "ratings": {
+        "0": {
+          "positionalRanking": 6
+        }
+      },
+      "player": {
+        "id": 4361370,
+        "fullName": "Compare Receiver",
+        "defaultPositionId": 3,
+        "proTeamId": 18,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          3,
+          4,
+          5,
+          23,
+          7,
+          20,
+          21
+        ],
+        "ownership": {
+          "percentOwned": 99.37,
+          "percentChange": -0.01
+        },
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 1,
+            "statSourceId": 0,
+            "appliedTotal": 28.2
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 18,
+            "statSourceId": 0,
+            "appliedTotal": 0.0
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 17,
+            "statSourceId": 0,
+            "appliedTotal": 25.9
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 2,
+            "statSourceId": 0,
+            "appliedTotal": 11.4
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 15.55
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 249.76
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 268.0
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 28.2
+          }
+        ]
+      }
+    },
+    {
+      "id": 4242335,
+      "onTeamId": 12,
+      "status": "ONTEAM",
+      "ratings": {
+        "0": {
+          "positionalRanking": 4
+        }
+      },
+      "player": {
+        "id": 4242335,
+        "fullName": "Compare Back",
+        "defaultPositionId": 2,
+        "proTeamId": 11,
+        "injuryStatus": "ACTIVE",
+        "eligibleSlots": [
+          2,
+          3,
+          23,
+          7,
+          20,
+          21
+        ],
+        "ownership": {
+          "percentOwned": 99.91,
+          "percentChange": 0.0
+        },
+        "stats": [
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 1,
+            "statSourceId": 0,
+            "appliedTotal": 25.1
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 18,
+            "statSourceId": 0,
+            "appliedTotal": 5.9
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 17,
+            "statSourceId": 0,
+            "appliedTotal": 17.4
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 16,
+            "statSourceId": 0,
+            "appliedTotal": 16.9
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 2,
+            "statSourceId": 0,
+            "appliedTotal": 29.5
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 2,
+            "statSourceId": 1,
+            "appliedTotal": 17.68
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 1,
+            "appliedTotal": 315.58
+          },
+          {
+            "seasonId": 2025,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 362.3
+          },
+          {
+            "seasonId": 2026,
+            "scoringPeriodId": 0,
+            "statSourceId": 0,
+            "appliedTotal": 25.1
+          }
+        ]
+      }
+    }
+  ]
+}
