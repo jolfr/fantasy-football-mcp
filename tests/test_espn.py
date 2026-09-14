@@ -11,7 +11,7 @@ from fantasy_mcp.espn import (
     EspnError,
     EspnNotFoundError,
 )
-from tests.conftest import LEAGUE_URL, PLAYERS_URL
+from tests.conftest import LEAGUE_URL, PLAYERS_URL, SEASON_URL
 
 
 @respx.mock
@@ -153,3 +153,34 @@ def test_get_players_index_auth_error(settings):
     respx.get(PLAYERS_URL).mock(return_value=httpx.Response(401, text="nope"))
     with pytest.raises(EspnAuthError, match="cookies"):
         EspnClient(settings).get_players_index()
+
+
+@respx.mock
+def test_get_sends_scoring_period_param(settings, league_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    EspnClient(settings).get("kona_player_info", scoring_period=2)
+    assert route.calls.last.request.url.params["scoringPeriodId"] == "2"
+
+
+@respx.mock
+def test_get_omits_scoring_period_by_default(settings, league_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    EspnClient(settings).get("mTeam")
+    assert "scoringPeriodId" not in route.calls.last.request.url.params
+
+
+@respx.mock
+def test_get_pro_schedules(settings, pro_schedules_json):
+    route = respx.get(SEASON_URL).mock(return_value=httpx.Response(200, json=pro_schedules_json))
+    data = EspnClient(settings).get_pro_schedules()
+    assert data["settings"]["proTeams"][0]["abbrev"]
+    req = route.calls.last.request
+    assert req.url.params["view"] == "proTeamSchedules_wl"
+    assert "espn_s2=s2-cookie" in req.headers["cookie"]
+
+
+@respx.mock
+def test_get_pro_schedules_rejects_non_object(settings):
+    respx.get(SEASON_URL).mock(return_value=httpx.Response(200, json=[1]))
+    with pytest.raises(EspnError, match="schedules"):
+        EspnClient(settings).get_pro_schedules()

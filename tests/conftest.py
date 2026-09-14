@@ -14,6 +14,8 @@ LEAGUE_URL = (
 
 PLAYERS_URL = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/players"
 
+SEASON_URL = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026"
+
 
 @pytest.fixture
 def settings() -> Settings:
@@ -54,3 +56,18 @@ def player_card_json() -> dict:
 @pytest.fixture
 def league_settings_json() -> dict:
     return json.loads((FIXTURES / "league_settings.json").read_text())
+
+
+@pytest.fixture
+def roster_settings_json() -> dict:
+    return json.loads((FIXTURES / "roster_settings.json").read_text())
+
+
+@pytest.fixture
+def projections_json() -> dict:
+    return json.loads((FIXTURES / "projections.json").read_text())
+
+
+@pytest.fixture
+def pro_schedules_json() -> dict:
+    return json.loads((FIXTURES / "pro_schedules.json").read_text())

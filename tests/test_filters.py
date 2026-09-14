@@ -8,6 +8,7 @@ from fantasy_mcp.filters import (
     free_agent_filter,
     normalize_position,
     player_card_filter,
+    player_ids_filter,
 )
 
 STATUS = {"value": ["FREEAGENT", "WAIVERS"]}
@@ -99,3 +100,10 @@ def test_player_card_filter_requests_totals_and_all_weekly_projections():
     assert top["additionalValue"][3:] == [f"112026{w}" for w in range(1, 19)]
     assert len(top["additionalValue"]) == 21
     assert set(players) == {"filterIds", "filterStatsForTopScoringPeriodIds"}
+
+
+def test_player_ids_filter():
+    out = player_ids_filter([3, 1, 2])
+    assert out == {"players": {"filterIds": {"value": [3, 1, 2]}}}
+    out["players"]["filterIds"]["value"].append(9)
+    assert player_ids_filter([3, 1, 2])["players"]["filterIds"]["value"] == [3, 1, 2]

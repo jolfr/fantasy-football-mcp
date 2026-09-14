@@ -33,20 +33,45 @@ class EspnClient:
         )
         self._cookies = {"espn_s2": settings.espn_s2, "SWID": settings.swid}
 
-    def get(self, *views: str, fantasy_filter: dict[str, Any] | None = None) -> dict[str, Any]:
-        """GET the league endpoint with one or more ``view`` params."""
+    def get(
+        self,
+        *views: str,
+        fantasy_filter: dict[str, Any] | None = None,
+        scoring_period: int | None = None,
+    ) -> dict[str, Any]:
+        """GET the league endpoint with one or more ``view`` params.
+
+        ``scoring_period`` selects which NFL week's per-player stats/projections
+        ESPN includes (defaults to the current week).
+        """
         headers = {"Accept": "application/json"}
         if fantasy_filter is not None:
             headers["X-Fantasy-Filter"] = json.dumps(fantasy_filter)
+        params: list[tuple[str, str]] = [("view", v) for v in views]
+        if scoring_period is not None:
+            params.append(("scoringPeriodId", str(scoring_period)))
         s = self.settings
         data = self._request(
             self.league_url,
-            [("view", v) for v in views],
+            params,
             headers,
             not_found=f"league {s.league_id}, season {s.season}. Check ESPN_LEAGUE_ID and ESPN_SEASON",
         )
         if not isinstance(data, dict):
             raise EspnError("Unexpected league response from ESPN (not an object).")
+        return data
+
+    def get_pro_schedules(self) -> dict[str, Any]:
+        """NFL teams with bye weeks and per-week games (league-independent)."""
+        url = f"{BASE}/seasons/{self.settings.season}"
+        data = self._request(
+            url,
+            [("view", "proTeamSchedules_wl")],
+            {"Accept": "application/json"},
+            not_found=f"the season {self.settings.season} pro schedules. Check ESPN_SEASON",
+        )
+        if not isinstance(data, dict):
+            raise EspnError("Unexpected pro schedules response from ESPN (not an object).")
         return data
 
     def get_players_index(self) -> list[dict[str, Any]]:

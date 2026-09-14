@@ -1,0 +1,45 @@
+from fantasy_mcp.lineup import optimal_lineup
+
+SLOTS = {0: 1, 2: 2, 4: 2, 6: 1, 16: 1, 17: 1, 20: 7, 21: 1, 23: 1}
+
+
+def _p(pid, proj, eligible, slot=20):
+    return {"player_id": pid, "projected": proj, "eligible_slots": eligible, "slot_id": slot}
+
+
+def test_fills_dedicated_then_flex_by_projection():
+    players = [
+        _p(1, 19.4, [0, 7, 20, 21], slot=0),
+        _p(2, 17.7, [2, 3, 23, 7, 20, 21], slot=2),
+        _p(3, 12.0, [2, 3, 23, 7, 20, 21]),          # bench RB
+        _p(4, 15.3, [3, 4, 5, 23, 7, 20, 21], slot=4),
+        _p(5, 14.7, [3, 4, 5, 23, 7, 20, 21], slot=4),
+        _p(6, 10.0, [3, 4, 5, 23, 7, 20, 21]),        # bench WR
+        _p(7, 9.9, [5, 6, 23, 7, 20, 21], slot=6),
+        _p(8, 6.8, [16, 20, 21], slot=16),
+        _p(9, 8.9, [17, 20, 21], slot=17),
+    ]
+    out = optimal_lineup(players, SLOTS)
+    assert [p["player_id"] for p in out[0]] == [1]
+    assert [p["player_id"] for p in out[2]] == [2, 3]        # second RB slot takes the bench RB
+    assert [p["player_id"] for p in out[4]] == [4, 5]
+    assert [p["player_id"] for p in out[23]] == [6]          # flex gets the best remaining
+    assert set(out) == {0, 2, 4, 6, 16, 17, 23}               # no bench/IR keys
+
+
+def test_ir_players_are_never_moved():
+    players = [_p(1, 30.0, [2, 23, 20, 21], slot=21), _p(2, 5.0, [2, 23, 20, 21], slot=2)]
+    out = optimal_lineup(players, {2: 1, 23: 1, 20: 1, 21: 1})
+    assert [p["player_id"] for p in out[2]] == [2]
+    assert out[23] == []
+
+
+def test_tie_keeps_current_starter_and_none_projection_is_zero():
+    players = [_p(1, 10.0, [4, 20], slot=20), _p(2, 10.0, [4, 20], slot=4), _p(3, None, [4, 20])]
+    out = optimal_lineup(players, {4: 1, 20: 2})
+    assert [p["player_id"] for p in out[4]] == [2]
+
+
+def test_slot_count_exceeds_players():
+    out = optimal_lineup([_p(1, 5.0, [4, 20])], {4: 2, 20: 1})
+    assert [p["player_id"] for p in out[4]] == [1]

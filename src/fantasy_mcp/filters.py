@@ -74,3 +74,8 @@ def player_card_filter(player_id: int, *, season: int) -> dict[str, Any]:
             "filterStatsForTopScoringPeriodIds": {"value": 17, "additionalValue": stat_ids},
         }
     }
+
+
+def player_ids_filter(player_ids: list[int]) -> dict[str, Any]:
+    """Filter restricting a player view to specific ESPN player ids."""
+    return {"players": {"filterIds": {"value": list(player_ids)}}}
