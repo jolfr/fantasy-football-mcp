@@ -12,3 +12,6 @@ wheels/
 # Secrets
 .env*
 !.env.example
+
+# Git worktrees
+.worktrees/
