@@ -87,7 +87,7 @@ def test_whitespace_optionals_are_treated_as_unset(monkeypatch):
 
 def test_unresolved_placeholder_required_reports_missing(monkeypatch):
     _set(monkeypatch, ESPN_LEAGUE_ID="${user_config.league_id}")
-    with pytest.raises(ConfigError, match="Missing required"):
+    with pytest.raises(ConfigError, match="not configured"):
         load_settings(load_dotenv_file=False)
 
 
@@ -96,3 +96,29 @@ def test_values_are_stripped(monkeypatch):
     s = load_settings(load_dotenv_file=False)
     assert s.espn_s2 == "s2"
     assert s.team_id == 7
+
+
+def test_saved_file_overrides_env(monkeypatch):
+    from fantasy_mcp import settings_store
+
+    _set(monkeypatch, ESPN_LEAGUE_ID="1", ESPN_S2="env-s2")
+    settings_store.save({"ESPN_S2": "file-s2", "ESPN_LEAGUE_ID": "99"})
+    s = load_settings(load_dotenv_file=False)
+    assert s.espn_s2 == "file-s2"
+    assert s.league_id == 99
+    assert s.swid == "{ABC-123}"  # not in the file, so env still supplies it
+
+
+def test_saved_file_alone_is_enough(monkeypatch):
+    from fantasy_mcp import settings_store
+
+    _set(monkeypatch, ESPN_S2=None, ESPN_SWID=None, ESPN_LEAGUE_ID=None)
+    settings_store.save({"ESPN_S2": "s2", "ESPN_SWID": "{X}", "ESPN_LEAGUE_ID": "7", "ESPN_TEAM_ID": "3"})
+    s = load_settings(load_dotenv_file=False)
+    assert (s.espn_s2, s.swid, s.league_id, s.team_id) == ("s2", "{X}", 7, 3)
+
+
+def test_missing_config_message_names_setup(monkeypatch):
+    _set(monkeypatch, ESPN_S2=None)
+    with pytest.raises(ConfigError, match="setup"):
+        load_settings(load_dotenv_file=False)
