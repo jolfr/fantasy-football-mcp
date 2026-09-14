@@ -133,6 +133,22 @@ def test_get_players_index_rejects_non_list(settings):
 
 
 @respx.mock
+def test_get_players_index_404_mentions_season_not_league(settings):
+    respx.get(PLAYERS_URL).mock(return_value=httpx.Response(404, text="{}"))
+    with pytest.raises(EspnNotFoundError) as exc:
+        EspnClient(settings).get_players_index()
+    assert "ESPN_SEASON" in str(exc.value)
+    assert "ESPN_LEAGUE_ID" not in str(exc.value)
+
+
+@respx.mock
+def test_get_rejects_non_object_body(settings):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=[1, 2]))
+    with pytest.raises(EspnError, match="not an object"):
+        EspnClient(settings).get("mTeam")
+
+
+@respx.mock
 def test_get_players_index_auth_error(settings):
     respx.get(PLAYERS_URL).mock(return_value=httpx.Response(401, text="nope"))
     with pytest.raises(EspnAuthError, match="cookies"):

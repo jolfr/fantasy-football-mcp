@@ -38,7 +38,16 @@ class EspnClient:
         headers = {"Accept": "application/json"}
         if fantasy_filter is not None:
             headers["X-Fantasy-Filter"] = json.dumps(fantasy_filter)
-        return self._request(self.league_url, [("view", v) for v in views], headers)
+        s = self.settings
+        data = self._request(
+            self.league_url,
+            [("view", v) for v in views],
+            headers,
+            not_found=f"league {s.league_id}, season {s.season}. Check ESPN_LEAGUE_ID and ESPN_SEASON",
+        )
+        if not isinstance(data, dict):
+            raise EspnError("Unexpected league response from ESPN (not an object).")
+        return data
 
     def get_players_index(self) -> list[dict[str, Any]]:
         """Active players for the season (league-independent); ~2.6k entries."""
@@ -47,7 +56,12 @@ class EspnClient:
             "Accept": "application/json",
             "X-Fantasy-Filter": json.dumps({"filterActive": {"value": True}}),
         }
-        data = self._request(url, [("scoringPeriodId", "0"), ("view", "players_wl")], headers)
+        data = self._request(
+            url,
+            [("scoringPeriodId", "0"), ("view", "players_wl")],
+            headers,
+            not_found=f"the season {self.settings.season} player index. Check ESPN_SEASON",
+        )
         if not isinstance(data, list):
             raise EspnError("Unexpected players index response from ESPN (not a list).")
         return data
@@ -74,16 +88,19 @@ class EspnClient:
             "ESPN_SWID. Check ESPN_SWID or set ESPN_TEAM_ID explicitly."
         )
 
-    def _request(self, url: str, params: list[tuple[str, str]], headers: dict[str, str]) -> Any:
+    def _request(
+        self, url: str, params: list[tuple[str, str]], headers: dict[str, str], *, not_found: str
+    ) -> Any:
+        """GET ``url`` and parse; ``not_found`` describes what a 404 means for this endpoint."""
         try:
             response = httpx.get(
                 url, params=params, cookies=self._cookies, headers=headers, timeout=TIMEOUT_SECONDS
             )
         except httpx.RequestError as e:
             raise EspnError(f"Could not reach ESPN: {type(e).__name__}") from e
-        return self._parse(response)
+        return self._parse(response, not_found=not_found)
 
-    def _parse(self, response: httpx.Response) -> Any:
+    def _parse(self, response: httpx.Response, *, not_found: str) -> Any:
         status = response.status_code
         if status in (401, 403):
             raise EspnAuthError(
@@ -91,11 +108,7 @@ class EspnClient:
                 "invalid, or expired — refresh them from your browser."
             )
         if status == 404:
-            s = self.settings
-            raise EspnNotFoundError(
-                f"ESPN returned 404 for league {s.league_id}, season {s.season}. "
-                "Check ESPN_LEAGUE_ID and ESPN_SEASON."
-            )
+            raise EspnNotFoundError(f"ESPN returned 404 for {not_found}.")
         if status >= 400:
             raise EspnError(f"ESPN returned HTTP {status}: {response.text[:200]}")
 
