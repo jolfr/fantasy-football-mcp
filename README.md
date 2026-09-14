@@ -11,11 +11,11 @@ roster, this week's matchup, free agents, and player profiles.
    Advanced settings → Install Extension…** and pick it).
 3. Claude Desktop will warn that the extension isn't signed by Anthropic —
    that's expected for this project; choose Install.
-4. Fill in the form: **espn_s2 cookie**, **SWID cookie**, and **League ID**.
-   See [Get your ESPN cookies and league ID](#get-your-espn-cookies-and-league-id)
-   below. Leave **Season (optional)** and **Team ID (optional)** blank unless
-   you need them.
-5. Start a new chat and ask "how's my fantasy team doing?"
+4. Skip the settings form (leave it empty and click Save) — you'll do setup in chat.
+5. Start a new chat and say **set up my fantasy league**. A card walks you
+   through copying two cookies from your browser and your league ID, then
+   tests the connection.
+6. Ask "how's my fantasy team doing?"
 
 The first launch takes a minute while Claude Desktop downloads Python and the
 server's dependencies. Nothing else needs to be installed.
@@ -53,11 +53,17 @@ your browser uses. They are private — do not share them.
 Open your league on fantasy.espn.com. The number after `leagueId=` in the
 address bar is your League ID.
 
+### Prefer not to type cookies in chat?
+
+Enter them in **Settings → Extensions → ESPN Fantasy Football** instead;
+Claude Desktop keeps them in your keychain. Values saved from the chat card
+take precedence over the settings form.
+
 ### When cookies expire
 
 ESPN cookies expire every few weeks. When they do, tools fail with a message
-mentioning "cookies". Copy fresh values from your browser into
-**Settings → Extensions → ESPN Fantasy Football** in Claude Desktop.
+mentioning "cookies". Say **update my ESPN cookies** and fill in the card
+again (or update the settings form if you used that).
 
 ### Optional settings
 
@@ -86,9 +92,15 @@ uv sync
   "args": ["run", "--directory", "/path/to/fantasy-mcp", "fantasy-mcp"]}}}
 ```
 
+Values saved from the in-chat setup card (`~/Library/Application Support/fantasy-mcp/config.json`
+on macOS, `~/.config/fantasy-mcp/` on Linux, `%APPDATA%\fantasy-mcp\` on
+Windows) take precedence over `.env`.
+
 ## Tools
 
 - `whoami` — confirms auth; returns league name, season, your team.
+- `setup` — shows the in-chat setup card; `save_settings` stores and
+  verifies what you enter.
 - `get_league_settings` — scoring rules (with a one-line summary), lineup slots, position limits, playoff format, waiver and trade rules.
 - `get_standings` — every team's rank, record, points, streak, ESPN projected
   finish, waiver priority, transaction counts, and playoff clinch status.
