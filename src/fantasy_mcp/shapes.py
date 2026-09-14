@@ -516,3 +516,79 @@ def shape_projections(
         "suggested_total": suggested_total,
         "changes": {"start": start, "sit": sit, "gain": round(suggested_total - current_total, 2)},
     }
+
+
+def _owner_name(league: dict[str, Any], team: dict[str, Any]) -> str | None:
+    owners = team.get("owners") or []
+    if not owners:
+        return None
+    swid = str(owners[0]).lower()
+    member = next((m for m in league.get("members") or [] if str(m.get("id", "")).lower() == swid), None)
+    if not member:
+        return None
+    first, last = (member.get("firstName") or "").strip(), (member.get("lastName") or "").strip()
+    if first and last:
+        return f"{first} {last}"
+    return first or member.get("displayName") or None
+
+
+def _streak(overall: dict[str, Any]) -> str | None:
+    kind, length = overall.get("streakType"), overall.get("streakLength") or 0
+    if kind not in ("WIN", "LOSS") or not length:
+        return None
+    return f"{'W' if kind == 'WIN' else 'L'}{int(length)}"
+
+
+def _standings_row(league: dict[str, Any], team: dict[str, Any], my_team_id: int | None) -> dict[str, Any]:
+    overall = (team.get("record") or {}).get("overall") or {}
+    counter = team.get("transactionCounter") or {}
+    clinch = team.get("playoffClinchType")
+    return {
+        "rank": team.get("playoffSeed") or 0,  # re-numbered after sorting
+        "team_id": team.get("id"),
+        "name": team.get("name"),
+        "abbrev": team.get("abbrev"),
+        "owner": _owner_name(league, team),
+        "is_me": team.get("id") == my_team_id,
+        "record": {
+            "wins": overall.get("wins", 0),
+            "losses": overall.get("losses", 0),
+            "ties": overall.get("ties", 0),
+        },
+        "points_for": _round(overall.get("pointsFor", 0.0)),
+        "points_against": _round(overall.get("pointsAgainst", 0.0)),
+        "streak": _streak(overall),
+        "games_back": _round(overall.get("gamesBack", 0.0)),
+        "projected_rank": team.get("currentProjectedRank") or None,
+        "waiver_priority": team.get("waiverRank") or None,
+        "transactions": {
+            "acquisitions": counter.get("acquisitions", 0),
+            "drops": counter.get("drops", 0),
+            "trades": counter.get("trades", 0),
+            "faab_spent": counter.get("acquisitionBudgetSpent", 0),
+        },
+        "clinched": clinch if clinch and clinch != "NONE" else None,
+    }
+
+
+def shape_standings(league: dict[str, Any], my_team_id: int | None) -> dict[str, Any]:
+    """League standings ordered by playoff seed (then record), with the user's team flagged."""
+    rows = [_standings_row(league, t, my_team_id) for t in league.get("teams") or []]
+    rows.sort(
+        key=lambda r: (
+            r["rank"] == 0,  # seeded teams first
+            r["rank"],
+            -r["record"]["wins"],
+            -(r["points_for"] or 0),
+        )
+    )
+    for position, row in enumerate(rows, start=1):
+        row["rank"] = position
+    schedule = (league.get("settings") or {}).get("scheduleSettings") or {}
+    return {
+        "season": league.get("seasonId"),
+        "week": (league.get("status") or {}).get("currentMatchupPeriod"),
+        "playoff_teams": schedule.get("playoffTeamCount"),
+        "playoff_seeding": schedule.get("playoffSeedingRule"),
+        "teams": rows,
+    }

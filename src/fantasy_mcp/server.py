@@ -29,6 +29,7 @@ from fantasy_mcp.shapes import (
     shape_matchup,
     shape_player_card,
     shape_projections,
+    shape_standings,
     shape_team,
     shape_whoami,
     team_by_id,
@@ -46,10 +47,11 @@ probability, opponent, or per-player points. Use get_free_agents for pickup,
 waiver, or "who's available" questions, and compare candidates against the
 roster from get_my_team before recommending a move. Use get_player for
 questions about a specific player (history, outlook, who owns them); pass
-player_id from another tool's output when you have it. Only whoami,
-get_league_settings, get_my_team, get_matchup, get_projections, get_free_agents,
-and get_player exist. There is no standings, transaction, or past-week matchup
-data yet -- say so instead of inventing it.
+player_id from another tool's output when you have it. Use get_standings for
+records, rankings, the playoff picture, or waiver order. Only whoami,
+get_league_settings, get_standings, get_my_team, get_matchup, get_projections,
+get_free_agents, and get_player exist. There is no transaction or past-week
+matchup data yet -- say so instead of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
@@ -159,6 +161,29 @@ def get_league_settings() -> dict[str, Any]:
     try:
         client = _get_client()
         return shape_league_settings(client.get("mSettings"))
+    except (EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool
+def get_standings() -> dict[str, Any]:
+    """League standings: rank, record, points for/against, streak, projected finish, waiver order.
+
+    Use this for "where do I stand", "who's in the playoff picture", "who has
+    the top waiver priority", or "who's been active on waivers/trades". Teams
+    are ordered by ESPN's playoff seed; is_me marks the user's team; owner is
+    the ESPN member name; projected_rank is ESPN's projected final standing;
+    clinched is set once a team has clinched a playoff spot. Records and points
+    update when ESPN finalizes each week (use get_matchup for live scores).
+    """
+    try:
+        client = _get_client()
+        league = client.get("mTeam", "mStandings", "mSettings")
+        try:
+            my_team_id: int | None = client.find_my_team_id(league)
+        except EspnError:
+            my_team_id = None  # standings are still useful without knowing which team is ours
+        return shape_standings(league, my_team_id)
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 

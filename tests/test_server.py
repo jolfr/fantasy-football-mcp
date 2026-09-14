@@ -317,11 +317,33 @@ async def test_get_projections_rejects_bad_week(client, week):
     assert not route.called
 
 
-async def test_seven_tools_registered(client):
+@respx.mock
+async def test_get_standings_tool(client, standings_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=standings_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_standings", {})
+    assert route.calls.last.request.url.params.get_list("view") == ["mTeam", "mStandings", "mSettings"]
+    assert [t["is_me"] for t in result.data["teams"]] == [True, False, False, False]
+    assert result.data["teams"][0]["owner"] == "Alex Owner"
+
+
+@respx.mock
+async def test_get_standings_without_a_matching_team_still_returns(settings, standings_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=standings_json))
+    server.set_client_for_tests(EspnClient(dataclasses.replace(settings, swid="{NOBODY}")))
+    try:
+        async with Client(server.mcp) as c:
+            result = await c.call_tool("get_standings", {})
+    finally:
+        server.set_client_for_tests(None)
+    assert len(result.data["teams"]) == 4 and not any(t["is_me"] for t in result.data["teams"])
+
+
+async def test_eight_tools_registered(client):
     async with Client(server.mcp) as c:
         names = sorted(t.name for t in await c.list_tools())
     assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
-                     "get_player", "get_projections", "whoami"]
+                     "get_player", "get_projections", "get_standings", "whoami"]
 
 
 @respx.mock

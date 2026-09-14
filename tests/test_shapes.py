@@ -501,3 +501,52 @@ def test_shape_projections_ignores_prior_season_stats_listed_first(
         *_proj_args(roster_settings_json, projections_json, pro_schedules_json), season=2026
     )
     assert next(p for p in out["players"] if p["name"] == "RB One")["projected"] == 17.68
+
+
+def test_shape_standings_rows_and_order(standings_json):
+    out = shapes.shape_standings(standings_json, my_team_id=12)
+    assert {k: out[k] for k in ("season", "week", "playoff_teams", "playoff_seeding")} == {
+        "season": 2026, "week": 1, "playoff_teams": 6, "playoff_seeding": "TOTAL_POINTS_SCORED",
+    }
+    assert [t["rank"] for t in out["teams"]] == [1, 2, 3, 4]
+    assert [t["team_id"] for t in out["teams"]] == [12, 5, 7, 3]
+    assert out["teams"][0] == {
+        "rank": 1, "team_id": 12, "name": "My Standings Team", "abbrev": "MST", "owner": "Alex Owner",
+        "is_me": True, "record": {"wins": 2, "losses": 0, "ties": 0},
+        "points_for": 231.5, "points_against": 190.2, "streak": "W2", "games_back": 0.0,
+        "projected_rank": 3, "waiver_priority": 5,
+        "transactions": {"acquisitions": 1, "drops": 1, "trades": 0, "faab_spent": 12},
+        "clinched": None,
+    }
+    by_id = {t["team_id"]: t for t in out["teams"]}
+    assert by_id[5]["owner"] == "espnfan2" and by_id[5]["clinched"] == "CLINCHED_PLAYOFFS"
+    assert by_id[7]["owner"] == "Casey" and by_id[7]["streak"] == "L1"
+    assert by_id[3]["owner"] is None and by_id[3]["streak"] == "L2" and by_id[3]["games_back"] == 2.0
+    assert [t["is_me"] for t in out["teams"]] == [True, False, False, False]
+
+
+def test_shape_standings_unseeded_teams_sort_by_record_and_ranks_are_gapless(standings_json):
+    for t in standings_json["teams"]:
+        t["playoffSeed"] = 0
+    out = shapes.shape_standings(standings_json, my_team_id=None)
+    assert [t["team_id"] for t in out["teams"]] == [12, 5, 7, 3]   # 2-0 231.5, 2-0 220.0, 1-1, 0-2
+    assert [t["rank"] for t in out["teams"]] == [1, 2, 3, 4]
+    assert not any(t["is_me"] for t in out["teams"])
+
+
+def test_shape_standings_zero_rank_fields_become_null(standings_json):
+    standings_json["teams"][0]["currentProjectedRank"] = 0
+    standings_json["teams"][0]["waiverRank"] = 0
+    standings_json["teams"][0]["record"]["overall"]["streakType"] = "NONE"
+    standings_json["teams"][0]["record"]["overall"]["streakLength"] = 0
+    row = shapes.shape_standings(standings_json, my_team_id=12)["teams"][0]
+    assert row["projected_rank"] is None and row["waiver_priority"] is None and row["streak"] is None
+
+
+def test_shape_standings_sparse():
+    assert shapes.shape_standings({}, my_team_id=1) == {
+        "season": None, "week": None, "playoff_teams": None, "playoff_seeding": None, "teams": [],
+    }
+    row = shapes.shape_standings({"teams": [{"id": 9}]}, my_team_id=9)["teams"][0]
+    assert row["rank"] == 1 and row["is_me"] is True and row["record"] == {"wins": 0, "losses": 0, "ties": 0}
+    assert row["owner"] is None and row["transactions"] == {"acquisitions": 0, "drops": 0, "trades": 0, "faab_spent": 0}

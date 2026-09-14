@@ -90,6 +90,8 @@ uv sync
 
 - `whoami` — confirms auth; returns league name, season, your team.
 - `get_league_settings` — scoring rules (with a one-line summary), lineup slots, position limits, playoff format, waiver and trade rules.
+- `get_standings` — every team's rank, record, points, streak, ESPN projected
+  finish, waiver priority, transaction counts, and playoff clinch status.
 - `get_my_team` — your record, points, and roster with lineup slots.
 - `get_matchup` — this week's head-to-head: live score, projection, win
   probability, and both rosters with per-player actual/projected points.

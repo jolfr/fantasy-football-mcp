@@ -71,3 +71,8 @@ def projections_json() -> dict:
 @pytest.fixture
 def pro_schedules_json() -> dict:
     return json.loads((FIXTURES / "pro_schedules.json").read_text())
+
+
+@pytest.fixture
+def standings_json() -> dict:
+    return json.loads((FIXTURES / "standings.json").read_text())
