@@ -174,3 +174,21 @@ other teams so the bye-week path can be exercised.
 - existing tool tests unchanged
 
 Manual: live `get_matchup` against the user's league before merge.
+
+## Addendum 2026-09-14: `week` parameter
+
+**Verified live:** `?scoringPeriodId=<week>` on the league endpoint returns
+the `schedule[]` game for that matchup period with
+`rosterForCurrentScoringPeriod` populated for that week (past weeks:
+final `totalPoints`, `winner` set; future weeks: projections only,
+`totalPointsLive` absent → status `UPCOMING`). The response's top-level
+`scoringPeriodId` echoes the requested week, which `shape_matchup` already
+uses to select per-player projections.
+
+`get_matchup(week: int | None = None)`: `week` validated 1–18 (as in
+`get_projections`); when given, the request adds `scoring_period=week` and
+`find_matchup` uses `week`; when omitted, behavior is unchanged (current
+matchup period from `status`). Output gains `current_week`
+(`status.currentMatchupPeriod`). Docstring/INSTRUCTIONS: "pass `week` for
+a past result or next week's preview". The "no past-week matchup data"
+caveat is removed.

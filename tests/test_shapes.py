@@ -580,3 +580,12 @@ def test_shape_comparison_unknown_id_and_no_last_season(compare_json, pro_schedu
     rows = shapes.shape_comparison([entry, {"id": 99, "error": "ESPN returned no player with id 99."}], compare_json, 2, {})
     assert rows[0]["last_season"] is None and rows[0]["week"]["opponent"] is None
     assert rows[1] == {"player_id": 99, "error": "ESPN returned no player with id 99."}
+
+
+def test_shape_matchup_projected_falls_back_to_sum_of_starter_projections(matchup_json):
+    game = matchup_json["schedule"][0]
+    for key in ("totalProjectedPoints", "totalProjectedPointsLive"):
+        game["home"].pop(key, None)
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    # Home starters with projections: Starter One 17.77 (NoStats has none); bench/IR excluded.
+    assert out["my_team"]["projected"] == 17.77

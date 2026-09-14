@@ -422,3 +422,34 @@ async def test_get_projections_fetches_and_caches_schedules(client, roster_setti
         server.set_pro_schedules_for_tests(None)
     assert sched.call_count == 1
     assert result.data["players"][1]["opponent"] == "@KC"
+
+
+@respx.mock
+async def test_get_matchup_past_or_future_week(client, matchup_json):
+    matchup_json["schedule"][1]["home"]["teamId"] = 12  # give team 12 a period-2 game
+    matchup_json["scoringPeriodId"] = 2
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=matchup_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_matchup", {"week": 2})
+    assert route.calls.last.request.url.params["scoringPeriodId"] == "2"
+    assert result.data["week"] == 2 and result.data["current_week"] == 1
+    assert result.data["status"] == "UPCOMING"
+
+
+@respx.mock
+async def test_get_matchup_default_has_no_scoring_period(client, matchup_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=matchup_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_matchup", {})
+    assert "scoringPeriodId" not in route.calls.last.request.url.params
+    assert result.data["week"] == 1 and result.data["current_week"] == 1
+
+
+@respx.mock
+@pytest.mark.parametrize("week", [0, 19])
+async def test_get_matchup_rejects_bad_week(client, week):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="week must be between 1 and 18"):
+            await c.call_tool("get_matchup", {"week": week})
+    assert not route.called

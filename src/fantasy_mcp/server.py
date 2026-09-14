@@ -53,8 +53,8 @@ call compare_players with all the names at once rather than get_player
 repeatedly. Use get_standings for records, rankings, the playoff picture, or
 waiver order. Only whoami, get_league_settings, get_standings, get_my_team,
 get_matchup, get_projections, get_free_agents, get_player, and compare_players
-exist. There is no transaction or past-week matchup data yet -- say so instead
-of inventing it.
+exist. get_matchup takes an optional week for past results or next week's
+preview. There is no transaction data yet -- say so instead of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
@@ -212,12 +212,17 @@ def get_my_team() -> dict[str, Any]:
         raise ToolError(str(e)) from e
 
 
+MAX_WEEK = 18
+
+
 @mcp.tool
-def get_matchup() -> dict[str, Any]:
-    """Return the user's current-week head-to-head matchup with live scoring.
+def get_matchup(week: int | None = None) -> dict[str, Any]:
+    """Return the user's head-to-head matchup for the current week (or a given week).
 
     Use this for "am I winning?", "who am I playing?", or "should I have started
-    X?". Covers the current week only. There is no per-player game-state field:
+    X?". week defaults to the current matchup period (current_week); pass an
+    earlier week for a final result or next week's number for a preview with
+    projections. There is no per-player game-state field:
     points of 0.0 may mean the player has not played yet OR played and scored
     nothing -- do not claim to know which.
 
@@ -230,20 +235,20 @@ def get_matchup() -> dict[str, Any]:
     player this week; null if unavailable). Only rows whose slot is not BENCH or IR
     count toward score.
     """
+    if week is not None and not 1 <= week <= MAX_WEEK:
+        raise ToolError(f"week must be between 1 and {MAX_WEEK} (got {week}).")
     try:
         client = _get_client()
-        league = client.get("mMatchup", "mMatchupScore", "mTeam")
+        league = client.get("mMatchup", "mMatchupScore", "mTeam", scoring_period=week)
         team_id = client.find_my_team_id(league)
-        week = league.get("status", {}).get("currentMatchupPeriod")
-        if week is None:
+        current_week = league.get("status", {}).get("currentMatchupPeriod")
+        if current_week is None:
             raise EspnError("ESPN response is missing status.currentMatchupPeriod.")
-        game = find_matchup(league, team_id, week)
-        return shape_matchup(game, league, team_id)
+        game = find_matchup(league, team_id, week or current_week)
+        return {"current_week": current_week, **shape_matchup(game, league, team_id)}
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
-
-MAX_WEEK = 18
 
 
 @mcp.tool
