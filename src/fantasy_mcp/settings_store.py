@@ -2,11 +2,11 @@
 
 Lives in the platform config directory, e.g.
 ``~/Library/Application Support/fantasy-mcp/config.json`` on macOS,
-``%APPDATA%\\fantasy-mcp\\config.json`` on Windows, ``~/.config/fantasy-mcp/config.json``
+``%LOCALAPPDATA%\\fantasy-mcp\\config.json`` on Windows, ``~/.config/fantasy-mcp/config.json``
 on Linux. Values are the same ESPN_* keys the environment uses.
 
 On Windows the 0600 mode only affects the read-only attribute; confidentiality there
-comes from the per-user %APPDATA% ACL.
+comes from the per-user %LOCALAPPDATA% ACL.
 """
 
 from __future__ import annotations

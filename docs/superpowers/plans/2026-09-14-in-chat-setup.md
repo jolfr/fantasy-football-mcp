@@ -130,7 +130,7 @@ Create `src/fantasy_mcp/settings_store.py`:
 
 Lives in the platform config directory, e.g.
 ``~/Library/Application Support/fantasy-mcp/config.json`` on macOS,
-``%APPDATA%\\fantasy-mcp\\config.json`` on Windows, ``~/.config/fantasy-mcp/config.json``
+``%LOCALAPPDATA%\\fantasy-mcp\\config.json`` on Windows, ``~/.config/fantasy-mcp/config.json``
 on Linux. Values are the same ESPN_* keys the environment uses.
 """
 
@@ -695,7 +695,7 @@ Replace the paragraph body with: "ESPN cookies expire every few weeks. When they
 
 - [ ] **Step 4: Update the Claude Code section**
 
-After the code block, add: "Values saved from the in-chat setup card (`~/Library/Application Support/fantasy-mcp/config.json` on macOS, `~/.config/fantasy-mcp/` on Linux, `%APPDATA%\fantasy-mcp\` on Windows) take precedence over `.env`."
+After the code block, add: "Values saved from the in-chat setup card (`~/Library/Application Support/fantasy-mcp/config.json` on macOS, `~/.config/fantasy-mcp/config.json` on Linux, `%LOCALAPPDATA%\fantasy-mcp\config.json` on Windows) take precedence over `.env`."
 
 - [ ] **Step 5: Tools list**
 

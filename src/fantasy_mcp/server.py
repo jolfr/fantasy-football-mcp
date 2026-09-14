@@ -72,7 +72,7 @@ Nothing here can modify the team. If the user asks to make a move, describe
 what to do and let them do it on ESPN.
 
 If a tool says the league is not configured, or the user asks to set up,
-connect, or change their league or cookies, call setup and ask them to fill
+connect, update, or change their league or cookies, call setup and ask them to fill
 in the card -- do not ask them to paste cookies into the chat. If a tool
 fails with a message mentioning "cookies", the ESPN session cookies have
 expired: call setup; the card explains where to copy fresh ones. Clients
@@ -170,7 +170,7 @@ def setup() -> ToolResult:
     """Show the in-chat setup card for connecting the user's ESPN league.
 
     Call this when any tool reports the league is not configured, or when the
-    user asks to set up, connect, or change their league or cookies. The card
+    user asks to set up, connect, update, or change their league or cookies. The card
     explains where to find the espn_s2 and SWID cookies, has one input per
     value, and saves + verifies them via save_settings. Ask the user to fill in
     the card; do not ask them to paste cookies into the chat. If this client

@@ -36,7 +36,8 @@ your browser uses. They are private — do not share them.
 4. Find the rows named `espn_s2` and `SWID`. Click a row, then copy its
    **Value** from the box below the table. Leave **Show URL-decoded**
    unchecked — the decoded value won't work. Paste each into the matching
-   field in Claude Desktop, keeping the curly braces on `SWID`.
+   box in the setup card (or the settings form), keeping the curly braces
+   on `SWID`.
 
 ### Safari (Mac)
 
@@ -92,9 +93,10 @@ uv sync
   "args": ["run", "--directory", "/path/to/fantasy-mcp", "fantasy-mcp"]}}}
 ```
 
-Values saved from the in-chat setup card (`~/Library/Application Support/fantasy-mcp/config.json`
-on macOS, `~/.config/fantasy-mcp/` on Linux, `%APPDATA%\fantasy-mcp\` on
-Windows) take precedence over `.env`.
+If you also use Claude Desktop, values saved from the in-chat setup card
+(`~/Library/Application Support/fantasy-mcp/config.json` on macOS,
+`~/.config/fantasy-mcp/config.json` on Linux, `%LOCALAPPDATA%\fantasy-mcp\config.json`
+on Windows) take precedence over `.env`.
 
 ## Tools
 
