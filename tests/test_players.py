@@ -37,3 +37,19 @@ def test_duplicate_exact_names_are_ambiguous(players_index):
 def test_no_match(players_index):
     with pytest.raises(EspnError, match="No active player matches 'Nobody Real'"):
         resolve_player("Nobody Real", players_index)
+
+
+@pytest.mark.parametrize("blank", ["", "   ", ". '"])
+def test_blank_name_is_rejected(players_index, blank):
+    with pytest.raises(EspnError, match="name is required"):
+        resolve_player(blank, players_index)
+
+
+def test_entry_without_name_does_not_crash(players_index):
+    players_index.append({"id": 3001, "defaultPositionId": 2, "proTeamId": 11})
+    players_index.append({"id": 3002, "fullName": "Sam Smithers", "defaultPositionId": 2, "proTeamId": 11})
+    assert resolve_player("Jonathan Taylor", players_index) == 4242335
+    with pytest.raises(EspnError) as exc:
+        resolve_player("smith", players_index)
+    assert "Sam Smithers" in str(exc.value)
+    assert "None" not in str(exc.value)
