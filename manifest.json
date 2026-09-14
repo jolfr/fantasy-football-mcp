@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "fantasy-mcp",
   "display_name": "ESPN Fantasy Football",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read-only access to your ESPN fantasy football team, matchup, free agents, and players.",
   "author": {
     "name": "Thomas Jack Carroll"
