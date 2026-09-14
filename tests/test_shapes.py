@@ -391,14 +391,10 @@ def test_shape_league_settings_from_fixture(league_settings_json):
     assert rules["pass_yds"] == 0.04 and rules["pass_td"] == 4 and rules["pass_int"] == -2
     assert rules["rush_yds"] == 0.1 and rules["rec_yds"] == 0.1 and rules["receptions"] == 1
     assert rules["fg_made_50_plus"] == 5 and rules["fg_missed"] == -1
+    assert rules["dst_sacks"] == 1 and rules["dst_int"] == 2          # from pointsOverrides["16"]
+    assert rules["dst_yards_allowed_200_299"] == 2 and rules["dst_yards_allowed_550_plus"] == -7
     assert rules["stat_63"] == 6                                       # unmapped id kept honestly
     assert "team_win" not in rules                                     # zero-point items dropped
-    # This fixture has no pointsOverrides data, so all D/ST scoring items
-    # (points: 0.0, no override) are zero-point and correctly dropped.
-    for dst_stat in (
-        "dst_sacks", "dst_int", "dst_yards_allowed_200_299", "dst_yards_allowed_550_plus"
-    ):
-        assert dst_stat not in rules
     assert scoring["summary"] == (
         "Full PPR · 25 pass yds/pt · 10 rush/rec yds/pt · 4-pt pass TD · 6-pt rush/rec TD · -2 INT · -2 fumble lost"
     )
