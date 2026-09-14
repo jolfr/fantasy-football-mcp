@@ -1,12 +1,17 @@
-"""Prefab UI for player cards: pure functions from tool output to a PrefabApp."""
+"""Prefab UI cards: pure functions from tool output (or saved config) to a PrefabApp."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from prefab_ui.actions.mcp import CallTool
+from prefab_ui.actions.state import SetState
 from prefab_ui.app import PrefabApp
 from prefab_ui.components import (
+    Alert,
+    AlertDescription,
     Badge,
+    Button,
     Card,
     CardContent,
     CardDescription,
@@ -15,13 +20,23 @@ from prefab_ui.components import (
     Column,
     DataTable,
     DataTableColumn,
+    Field,
+    FieldDescription,
+    FieldTitle,
+    Form,
+    Heading,
+    If,
     Image,
+    Input,
+    Link,
     Metric,
     Muted,
     Row,
     Separator,
+    Text,
 )
 from prefab_ui.components.charts import ChartSeries, LineChart
+from prefab_ui.rx import RESULT
 
 Stats = dict[str, int | float]
 
@@ -258,4 +273,71 @@ def player_card(profile: dict[str, Any]) -> PrefabApp:
                             paginated=True,
                             page_size=10,
                         )
+    return app
+
+
+README_COOKIES = "https://github.com/jolfr/fantasy-football-mcp#get-your-espn-cookies-and-league-id"
+
+_COOKIE_STEPS = (
+    "Open fantasy.espn.com in Chrome (or Edge/Brave) and make sure you're logged in.",
+    "Right-click the page and choose Inspect, then click the Application tab.",
+    "In the left sidebar, under Storage, expand Cookies and click https://fantasy.espn.com.",
+    "Click the espn_s2 row and copy its Value from the box below the table "
+    '(leave "Show URL-decoded" unchecked). Paste it below.',
+    "Do the same for the SWID row — keep the curly braces.",
+)
+
+
+def setup_card(current: dict[str, Any]) -> PrefabApp:
+    """Build the in-chat setup form. ``current`` may carry ``league_id``; cookies are never pre-filled."""
+    league_id = current.get("league_id")
+    save = CallTool(
+        "save_settings",
+        arguments={"espn_s2": "{{ espn_s2 }}", "swid": "{{ swid }}", "league_id": "{{ league_id }}"},
+        on_success=SetState("result", RESULT),
+    )
+    with PrefabApp(title="Connect your ESPN league", state={"result": {"ok": False, "error": ""}}) as app:
+        with Card():
+            with CardHeader():
+                CardTitle(content="Connect your ESPN league")
+                CardDescription(
+                    content="ESPN has no public API, so Claude signs in with the two cookies your "
+                    "browser uses. They stay on this computer and are only sent to ESPN."
+                )
+            with CardContent():
+                with Column(gap=4):
+                    Heading(content="Find your cookies", level=4)
+                    with Column(gap=1):
+                        for i, step in enumerate(_COOKIE_STEPS, 1):
+                            Text(content=f"{i}. {step}")
+                    with Row(gap=1):
+                        Muted(content="Using Safari?")
+                        Link(content="See the README.", href=README_COOKIES, target="_blank")
+                    Separator()
+                    with Form(on_submit=save):
+                        with Field():
+                            FieldTitle(content="espn_s2 cookie")
+                            Input(name="espn_s2", input_type="password", required=True)
+                        with Field():
+                            FieldTitle(content="SWID cookie")
+                            FieldDescription(content="Keep the curly braces, e.g. {1234ABCD-...}.")
+                            Input(name="swid", input_type="password", required=True)
+                        with Field():
+                            FieldTitle(content="League ID")
+                            FieldDescription(content="The leagueId= number in your league's URL on fantasy.espn.com.")
+                            Input(
+                                name="league_id",
+                                input_type="number",
+                                required=True,
+                                value=str(league_id) if league_id is not None else None,
+                            )
+                        Button(label="Save & test", button_type="submit")
+                    with If("result.ok"):
+                        with Alert(variant="success"):
+                            AlertDescription(
+                                content="Connected — {{ result.team_name }} in {{ result.league_name }} ({{ result.season }})."
+                            )
+                    with If("result.error"):
+                        with Alert(variant="destructive"):
+                            AlertDescription(content="{{ result.error }}")
     return app

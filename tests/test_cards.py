@@ -1,4 +1,4 @@
-from fantasy_mcp.cards import player_card, stat_line
+from fantasy_mcp.cards import player_card, setup_card, stat_line
 from fantasy_mcp.shapes import shape_player_card
 
 
@@ -208,3 +208,41 @@ def test_player_card_without_headshot_has_no_image(player_card_json):
     profile = _profile(player_card_json)
     profile["headshot_url"] = None
     assert _nodes(player_card(profile), "Image") == []
+
+
+def test_setup_card_has_password_inputs_and_calls_save_settings():
+    app = setup_card({})
+    inputs = {n["name"]: n for n in _nodes(app, "Input")}
+    assert set(inputs) == {"espn_s2", "swid", "league_id"}
+    assert inputs["espn_s2"]["inputType"] == "password"
+    assert inputs["swid"]["inputType"] == "password"
+    assert inputs["league_id"]["inputType"] == "number"
+    assert all(n["required"] for n in inputs.values())
+
+    (form,) = _nodes(app, "Form")
+    submit = form["onSubmit"]
+    submit = submit[0] if isinstance(submit, list) else submit
+    assert submit["action"] == "toolCall"
+    assert submit["tool"] == "save_settings"
+    assert submit["arguments"] == {
+        "espn_s2": "{{ espn_s2 }}",
+        "swid": "{{ swid }}",
+        "league_id": "{{ league_id }}",
+    }
+
+
+def test_setup_card_prefills_league_id_but_never_cookies():
+    app = setup_card({"league_id": 588659244})
+    inputs = {n["name"]: n for n in _nodes(app, "Input")}
+    assert inputs["league_id"].get("value") == "588659244"
+    assert not inputs["espn_s2"].get("value")
+    assert not inputs["swid"].get("value")
+
+
+def test_setup_card_explains_where_cookies_are():
+    app = setup_card({})
+    text = " ".join(str(n.get("content", "")) for n in _nodes(app, "Text") + _nodes(app, "Muted"))
+    for phrase in ("Inspect", "Application", "Cookies", "espn_s2", "SWID", "URL-decoded"):
+        assert phrase in text
+    (link,) = _nodes(app, "Link")
+    assert "fantasy-football-mcp#get-your-espn-cookies-and-league-id" in link["href"]
