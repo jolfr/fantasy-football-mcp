@@ -337,6 +337,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastmcp", extra = ["apps"] },
     { name = "httpx" },
+    { name = "platformdirs" },
     { name = "prefab-ui" },
     { name = "python-dotenv" },
 ]
@@ -352,6 +353,7 @@ dev = [
 requires-dist = [
     { name = "fastmcp", extras = ["apps"], specifier = ">=4.0.3" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "platformdirs", specifier = ">=4.11.8" },
     { name = "prefab-ui", specifier = "==0.20.2" },
     { name = "python-dotenv", specifier = ">=1.2.3" },
 ]

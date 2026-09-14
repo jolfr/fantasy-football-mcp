@@ -81,3 +81,13 @@ def standings_json() -> dict:
 @pytest.fixture
 def compare_json() -> dict:
     return json.loads((FIXTURES / "compare.json").read_text())
+
+
+@pytest.fixture(autouse=True)
+def isolated_config_path(tmp_path, monkeypatch):
+    """Every test gets its own settings file; never read or write the developer's real one."""
+    from fantasy_mcp import settings_store
+
+    path = tmp_path / "fantasy-mcp" / "config.json"
+    monkeypatch.setattr(settings_store, "config_path", lambda: path)
+    return path
