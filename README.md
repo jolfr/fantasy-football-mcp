@@ -106,6 +106,7 @@ uv sync
   lines for this season and last.
   In clients that support MCP Apps (Claude Desktop, claude.ai) this renders
   as an interactive card; elsewhere the JSON profile is returned as text.
+- `compare_players` — 2–6 players side by side: this week's projection and opponent, season pace, recent form, last season, league availability, ownership trend.
 
 Nothing here can change your team; it is read-only.
 

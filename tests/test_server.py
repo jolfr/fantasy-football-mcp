@@ -339,10 +339,69 @@ async def test_get_standings_without_a_matching_team_still_returns(settings, sta
     assert len(result.data["teams"]) == 4 and not any(t["is_me"] for t in result.data["teams"])
 
 
-async def test_eight_tools_registered(client):
+@respx.mock
+async def test_compare_players_tool(client, cached_index, cached_schedules, compare_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=compare_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("compare_players", {"players": ["Jonathan Taylor", "4361370"], "week": 2})
+    req = route.calls.last.request
+    assert req.url.params.get_list("view") == ["kona_playercard", "mTeam", "mStatus"]
+    assert req.url.params["scoringPeriodId"] == "2"
+    assert json.loads(req.headers["x-fantasy-filter"])["players"]["filterIds"]["value"] == [4242335, 4361370]
+    assert [p["name"] for p in result.data["players"]] == ["Compare Back", "Compare Receiver"]
+    assert result.data["players"][0]["week"]["projected"] == 17.68
+    assert "unresolved" not in result.data
+
+
+@respx.mock
+async def test_compare_players_default_week_reads_status_first(client, cached_index, cached_schedules, compare_json):
+    def respond(request):
+        views = request.url.params.get_list("view")
+        if views == ["mStatus"]:
+            return httpx.Response(200, json={"status": {"currentMatchupPeriod": 1}})
+        return httpx.Response(200, json=compare_json)
+
+    route = respx.get(LEAGUE_URL).mock(side_effect=respond)
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("compare_players", {"players": [4242335, 4361370]})
+    assert result.data["week"] == 1
+    assert route.calls[0].request.url.params.get_list("view") == ["mStatus"]
+    assert route.calls[1].request.url.params["scoringPeriodId"] == "1"
+
+
+@respx.mock
+async def test_compare_players_partial_resolution(client, cached_index, cached_schedules, compare_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=compare_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("compare_players", {"players": ["Jonathan Taylor", "tucker"], "week": 2})
+    assert [p["name"] for p in result.data["players"]] == ["Compare Back"]
+    assert result.data["unresolved"][0]["input"] == "tucker"
+    assert "id 4572680" in result.data["unresolved"][0]["error"]
+
+
+@respx.mock
+@pytest.mark.parametrize("players", [["a"], ["a", "b", "c", "d", "e", "f", "g"]])
+async def test_compare_players_count_validation(client, players):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="between 2 and 6"):
+            await c.call_tool("compare_players", {"players": players})
+    assert not route.called
+
+
+@respx.mock
+async def test_compare_players_all_unresolved_is_tool_error(client, cached_index):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="Nobody Real"):
+            await c.call_tool("compare_players", {"players": ["Nobody Real", "Nobody Else"], "week": 2})
+    assert not route.called
+
+
+async def test_nine_tools_registered(client):
     async with Client(server.mcp) as c:
         names = sorted(t.name for t in await c.list_tools())
-    assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
+    assert names == ["compare_players", "get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
                      "get_player", "get_projections", "get_standings", "whoami"]
 
 

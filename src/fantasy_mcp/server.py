@@ -21,9 +21,10 @@ from fantasy_mcp.filters import (
     player_card_filter,
     player_ids_filter,
 )
-from fantasy_mcp.players import resolve_player
+from fantasy_mcp.players import resolve_player, resolve_players
 from fantasy_mcp.shapes import (
     find_matchup,
+    shape_comparison,
     shape_free_agent,
     shape_league_settings,
     shape_matchup,
@@ -47,11 +48,13 @@ probability, opponent, or per-player points. Use get_free_agents for pickup,
 waiver, or "who's available" questions, and compare candidates against the
 roster from get_my_team before recommending a move. Use get_player for
 questions about a specific player (history, outlook, who owns them); pass
-player_id from another tool's output when you have it. Use get_standings for
-records, rankings, the playoff picture, or waiver order. Only whoami,
-get_league_settings, get_standings, get_my_team, get_matchup, get_projections,
-get_free_agents, and get_player exist. There is no transaction or past-week
-matchup data yet -- say so instead of inventing it.
+player_id from another tool's output when you have it. For "X or Y?" questions
+call compare_players with all the names at once rather than get_player
+repeatedly. Use get_standings for records, rankings, the playoff picture, or
+waiver order. Only whoami, get_league_settings, get_standings, get_my_team,
+get_matchup, get_projections, get_free_agents, get_player, and compare_players
+exist. There is no transaction or past-week matchup data yet -- say so instead
+of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
@@ -389,6 +392,58 @@ def get_player(name: str | None = None, player_id: int | None = None) -> ToolRes
         except Exception:
             logger.exception("player_card failed to render; returning JSON only")
             return ToolResult(content=text)
+    except (FilterError, EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+MAX_COMPARE = 6
+
+
+@mcp.tool
+def compare_players(players: list[str | int], week: int | None = None) -> dict[str, Any]:
+    """Compare 2-6 players side by side for "X or Y?" decisions.
+
+    players may mix names and player_ids (ids from other tools are precise;
+    names are matched against ESPN's active-player index). Ambiguous or
+    unknown names are returned in `unresolved` with candidate ids -- retry
+    just those, the rest still come back. week defaults to the league's
+    current NFL week; pass next week's number to plan ahead.
+
+    Each row: identity/status/owned_by; week {projected, opponent, kickoff};
+    season {projected, points, positional_rank, games, avg}; last_3 (points in
+    the most recent games this season, newest first); last_season {points,
+    games, avg} or null; percent_owned / percent_change (ESPN-wide ownership
+    and trend). Rows keep the input order.
+    """
+    if not 2 <= len(players) <= MAX_COMPARE:
+        raise ToolError(f"Pass between 2 and {MAX_COMPARE} players (got {len(players)}).")
+    if week is not None and not 1 <= week <= MAX_WEEK:
+        raise ToolError(f"week must be between 1 and {MAX_WEEK} (got {week}).")
+    try:
+        client = _get_client()
+        index = _get_players_index(client) if any(not isinstance(p, int) and not str(p).strip().lstrip("-").isdigit() for p in players) else []
+        ids_, unresolved = resolve_players(players, index)
+        if not ids_:
+            raise EspnError("No players could be resolved: " + "; ".join(u["error"] for u in unresolved))
+        if week is None:
+            status = client.get("mStatus")
+            week = (status.get("status") or {}).get("currentMatchupPeriod")
+            if week is None:
+                raise EspnError("ESPN response is missing status.currentMatchupPeriod.")
+        league = client.get(
+            "kona_playercard", "mTeam", "mStatus",
+            fantasy_filter=player_card_filter(ids_, season=client.settings.season),
+            scoring_period=week,
+        )
+        by_id = {e.get("id"): e for e in league.get("players") or []}
+        ordered = [by_id.get(pid) or {"id": pid, "error": f"ESPN returned no player with id {pid}."} for pid in ids_]
+        result: dict[str, Any] = {
+            "week": week,
+            "players": shape_comparison(ordered, league, week, _get_pro_schedules(client)),
+        }
+        if unresolved:
+            result["unresolved"] = unresolved
+        return result
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
