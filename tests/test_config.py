@@ -2,6 +2,7 @@ import datetime as dt
 
 import pytest
 
+from fantasy_mcp import settings_store
 from fantasy_mcp.config import ConfigError, Settings, load_settings
 
 REQUIRED = {
@@ -99,8 +100,6 @@ def test_values_are_stripped(monkeypatch):
 
 
 def test_saved_file_overrides_env(monkeypatch):
-    from fantasy_mcp import settings_store
-
     _set(monkeypatch, ESPN_LEAGUE_ID="1", ESPN_S2="env-s2")
     settings_store.save({"ESPN_S2": "file-s2", "ESPN_LEAGUE_ID": "99"})
     s = load_settings(load_dotenv_file=False)
@@ -110,8 +109,6 @@ def test_saved_file_overrides_env(monkeypatch):
 
 
 def test_saved_file_alone_is_enough(monkeypatch):
-    from fantasy_mcp import settings_store
-
     _set(monkeypatch, ESPN_S2=None, ESPN_SWID=None, ESPN_LEAGUE_ID=None)
     settings_store.save({"ESPN_S2": "s2", "ESPN_SWID": "{X}", "ESPN_LEAGUE_ID": "7", "ESPN_TEAM_ID": "3"})
     s = load_settings(load_dotenv_file=False)
@@ -122,3 +119,10 @@ def test_missing_config_message_names_setup(monkeypatch):
     _set(monkeypatch, ESPN_S2=None)
     with pytest.raises(ConfigError, match="setup"):
         load_settings(load_dotenv_file=False)
+
+
+def test_blank_saved_value_falls_through_to_env(monkeypatch, isolated_config_path):
+    _set(monkeypatch)
+    isolated_config_path.parent.mkdir(parents=True)
+    isolated_config_path.write_text('{"ESPN_S2": "  "}')
+    assert load_settings(load_dotenv_file=False).espn_s2 == "s2-cookie"

@@ -27,16 +27,20 @@ class Settings:
 _REQUIRED = ("ESPN_S2", "ESPN_SWID", "ESPN_LEAGUE_ID")
 
 
-def _env(name: str) -> str | None:
-    """Return the variable's value, or None if unset, blank, or an unresolved ${...} template.
+def _clean(raw: str | None) -> str | None:
+    """None for unset, blank, or an unresolved ${...} template.
 
     Claude Desktop passes "${user_config.x}" through literally when the user leaves
     an optional extension field blank.
     """
-    raw = os.environ.get(name, "").strip()
+    raw = (raw or "").strip()
     if not raw or (raw.startswith("${") and raw.endswith("}")):
         return None
     return raw
+
+
+def _env(name: str) -> str | None:
+    return _clean(os.environ.get(name))
 
 
 def _int(name: str, raw: str) -> int:
@@ -48,8 +52,7 @@ def _int(name: str, raw: str) -> int:
 
 def _value(name: str, saved: dict[str, str]) -> str | None:
     """Saved-file value first (the in-chat setup card writes it), then the environment."""
-    raw = (saved.get(name) or "").strip()
-    return raw or _env(name)
+    return _clean(saved.get(name)) or _env(name)
 
 
 def load_settings(load_dotenv_file: bool = True) -> Settings:
