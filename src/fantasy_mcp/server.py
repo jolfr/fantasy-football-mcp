@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.apps import PrefabAppConfig, ResourceCSP
 from fastmcp.exceptions import ToolError
 from fastmcp.tools import ToolResult
 
@@ -51,6 +52,7 @@ into the server's .env file.
 """
 
 logger = logging.getLogger(__name__)
+ESPN_CDN = "https://a.espncdn.com"
 
 mcp = FastMCP("fantasy-mcp", instructions=INSTRUCTIONS)
 
@@ -202,7 +204,7 @@ def get_free_agents(
         raise ToolError(str(e)) from e
 
 
-@mcp.tool(app=True)
+@mcp.tool(app=PrefabAppConfig(csp=ResourceCSP(resource_domains=[ESPN_CDN])))
 def get_player(name: str | None = None, player_id: int | None = None) -> ToolResult:
     """Full profile for one player: status, league ownership, season numbers, outlook, game log.
 
@@ -224,7 +226,8 @@ def get_player(name: str | None = None, player_id: int | None = None) -> ToolRes
     active-player list taken when the server started; a player signed since then
     may not resolve by name but still works by player_id. In clients that
     support MCP Apps this renders as a card; the JSON profile is always
-    returned as text.
+    returned as text. headshot_url points at ESPN's CDN (team logo for a D/ST)
+    and is not verified to exist.
     """
     if (name is None) == (player_id is None):
         raise ToolError("Pass exactly one of name or player_id.")

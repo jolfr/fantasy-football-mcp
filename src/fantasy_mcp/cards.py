@@ -15,6 +15,7 @@ from prefab_ui.components import (
     Column,
     DataTable,
     DataTableColumn,
+    Image,
     Metric,
     Muted,
     Row,
@@ -211,12 +212,16 @@ def player_card(profile: dict[str, Any]) -> PrefabApp:
     with PrefabApp(title=f"{name} — {position} {team}") as app:
         with Card():
             with CardHeader():
-                with Row(gap=2):
-                    CardTitle(content=name)
-                    Badge(label=f"{position} · {team}", variant="secondary")
-                    if injury:
-                        Badge(label=str(injury), variant=_INJURY_VARIANT.get(injury, "destructive"))
-                CardDescription(content=_status_line(profile))
+                with Row(gap=4):
+                    if profile.get("headshot_url"):
+                        Image(src=profile["headshot_url"], alt=name, width="96px", height="70px")
+                    with Column(gap=1):
+                        with Row(gap=2):
+                            CardTitle(content=name)
+                            Badge(label=f"{position} · {team}", variant="secondary")
+                            if injury:
+                                Badge(label=str(injury), variant=_INJURY_VARIANT.get(injury, "destructive"))
+                        CardDescription(content=_status_line(profile))
             with CardContent():
                 with Column(gap=4):
                     with Row(gap=4):

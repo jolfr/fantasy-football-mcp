@@ -194,3 +194,17 @@ def test_player_card_empty_profile_does_not_raise():
     assert app.title == "Unknown player — None None"
     assert [n["content"] for n in _nodes(app, "CardDescription")] == ["Status unknown"]
     assert _nodes(app, "DataTable") == []
+
+
+def test_player_card_shows_headshot(player_card_json):
+    app = player_card(_profile(player_card_json))
+    (img,) = _nodes(app, "Image")
+    assert img["src"].endswith("/4242335.png&w=350&h=254")
+    assert img["alt"] == "Card Back"
+    assert img["width"] == "96px" and img["height"] == "70px"
+
+
+def test_player_card_without_headshot_has_no_image(player_card_json):
+    profile = _profile(player_card_json)
+    profile["headshot_url"] = None
+    assert _nodes(player_card(profile), "Image") == []
