@@ -88,6 +88,5 @@ def isolated_config_path(tmp_path, monkeypatch):
     """Every test gets its own settings file; never read or write the developer's real one."""
     from fantasy_mcp import settings_store
 
-    path = tmp_path / "fantasy-mcp" / "config.json"
-    monkeypatch.setattr(settings_store, "config_path", lambda: path)
-    return path
+    monkeypatch.setattr(settings_store, "user_config_dir", lambda *a, **k: str(tmp_path / "fantasy-mcp"))
+    return tmp_path / "fantasy-mcp" / "config.json"
