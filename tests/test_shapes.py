@@ -315,6 +315,11 @@ def test_shape_player_card_full(player_card_json):
     assert all(g["season"] in (2026, 2025) for g in log)
 
 
+def test_round_normalizes_negative_zero():
+    assert str(shapes._round(-0.001, 1)) == "0.0"
+    assert shapes._round(-0.04) == -0.04
+
+
 def test_shape_player_card_unknown_owner_team_and_id_fallback(player_card_json):
     entry = player_card_json["players"][0]
     entry["onTeamId"] = 99

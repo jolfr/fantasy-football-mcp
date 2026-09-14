@@ -97,7 +97,10 @@ def find_matchup(league: dict[str, Any], team_id: int, period: int) -> dict[str,
 
 
 def _round(value: Any, ndigits: int = 2) -> float | None:
-    return None if value is None else round(float(value), ndigits)
+    if value is None:
+        return None
+    result = round(float(value), ndigits)
+    return 0.0 if result == 0 else result  # normalize -0.0
 
 
 def _stat(player: dict[str, Any], *, period: int, source: int, season: int) -> float | None:
