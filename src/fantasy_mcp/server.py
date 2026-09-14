@@ -102,6 +102,7 @@ def set_client_for_tests(client: EspnClient | None) -> None:
 
 
 def _reset_client() -> None:
+    # Player/schedule caches are season-scoped; save_settings can't change the season, so only the client is dropped.
     global _client
     _client = None
 
@@ -145,6 +146,11 @@ def set_pro_schedules_for_tests(schedules: dict[str, Any] | None) -> None:
 # --- tools -------------------------------------------------------------------
 
 
+def _lookup_whoami(client: EspnClient) -> dict[str, Any]:
+    league = client.get("mTeam", "mSettings")
+    return shape_whoami(league, client.find_my_team_id(league), client.settings)
+
+
 @mcp.tool
 def whoami() -> dict[str, Any]:
     """Verify ESPN credentials and league configuration.
@@ -154,10 +160,7 @@ def whoami() -> dict[str, Any]:
     message if cookies are expired or the league/team can't be resolved.
     """
     try:
-        client = _get_client()
-        league = client.get("mTeam", "mSettings")
-        team_id = client.find_my_team_id(league)
-        return shape_whoami(league, team_id, client.settings)
+        return _lookup_whoami(_get_client())
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
@@ -174,16 +177,20 @@ def setup() -> ToolResult:
     cannot display cards, tell the user to set the values in the extension's
     settings in Claude Desktop or in .env for a local checkout (see README).
     """
-    saved = settings_store.load()
-    current = {"league_id": saved["ESPN_LEAGUE_ID"]} if saved.get("ESPN_LEAGUE_ID") else {}
+    try:
+        current: dict[str, Any] = {"league_id": load_settings().league_id}
+    except ConfigError:
+        current = {}
     return ToolResult(
-        content="Setup card shown. Ask the user to fill it in and press Save & test.",
+        content="Setup card shown. Ask the user to fill it in and press Save & test. "
+        "If they don't see a card, tell them to enter the values in the extension's "
+        "settings in Claude Desktop or in .env for a local checkout (see README).",
         structured_content=setup_card(current),
     )
 
 
 @mcp.tool
-def save_settings(espn_s2: str, swid: str, league_id: str) -> dict[str, Any]:
+def save_settings(espn_s2: str = "", swid: str = "", league_id: str | int = "") -> dict[str, Any]:
     """Save ESPN credentials and league id, then verify them against ESPN.
 
     Normally called by the setup card's Save & test button; you may call it
@@ -191,21 +198,21 @@ def save_settings(espn_s2: str, swid: str, league_id: str) -> dict[str, Any]:
     "league_name", "team_name", "season"} on success, or {"ok": false,
     "error": "..."} with a message to relay. Values are stored in a per-user
     config file that takes precedence over the extension's settings form.
+    Values are written to the config file before the ESPN check, so on an
+    `ok: false` cookie error they are already saved (tell the user to
+    re-copy espn_s2/SWID); on a validation error nothing is written.
     """
-    espn_s2, swid, league_id = espn_s2.strip(), swid.strip(), league_id.strip()
-    if not (swid.startswith("{") and swid.endswith("}")):
-        return {"ok": False, "error": "SWID must include the curly braces, e.g. {1234ABCD-...}."}
-    if not league_id.isdigit():
-        return {"ok": False, "error": f"League ID must be a number, got {league_id!r}."}
+    espn_s2, swid, league_id = espn_s2.strip(), swid.strip(), str(league_id).strip()
     if not espn_s2:
         return {"ok": False, "error": "espn_s2 is empty."}
+    if not (swid.startswith("{") and swid.endswith("}")):
+        return {"ok": False, "error": "SWID must include the curly braces, e.g. {1234ABCD-...}."}
+    if not league_id.isdecimal():
+        return {"ok": False, "error": f"League ID must be a number, got {league_id!r}."}
     settings_store.save({"ESPN_S2": espn_s2, "ESPN_SWID": swid, "ESPN_LEAGUE_ID": league_id})
     _reset_client()
     try:
-        client = _get_client()
-        league = client.get("mTeam", "mSettings")
-        team_id = client.find_my_team_id(league)
-        who = shape_whoami(league, team_id, client.settings)
+        who = _lookup_whoami(_get_client())
     except (EspnError, ConfigError) as e:
         return {"ok": False, "error": str(e)}
     return {

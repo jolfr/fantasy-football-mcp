@@ -22,6 +22,13 @@ def client(settings):
     server.set_client_for_tests(None)
 
 
+@pytest.fixture
+def no_client():
+    server.set_client_for_tests(None)
+    yield
+    server.set_client_for_tests(None)
+
+
 @respx.mock
 async def test_whoami_tool(client, league_json):
     route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
@@ -487,9 +494,10 @@ async def test_twelve_tools_registered(client):
                      "save_settings", "setup", "whoami"]
 
 
-async def test_setup_tool_returns_card_without_cookies(isolated_config_path):
+async def test_setup_tool_returns_card_without_cookies(isolated_config_path, monkeypatch):
     from fantasy_mcp import settings_store
 
+    monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
     settings_store.save({"ESPN_S2": "secret-s2", "ESPN_SWID": "{SECRET}", "ESPN_LEAGUE_ID": "4242"})
     async with Client(server.mcp) as c:
         tool = next(t for t in await c.list_tools() if t.name == "setup")
@@ -501,21 +509,19 @@ async def test_setup_tool_returns_card_without_cookies(isolated_config_path):
     assert '"4242"' in dumped  # league id is pre-filled
 
 
-async def test_unconfigured_tool_points_at_setup(monkeypatch):
+async def test_unconfigured_tool_points_at_setup(monkeypatch, no_client):
     monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
     for key in ("ESPN_S2", "ESPN_SWID", "ESPN_LEAGUE_ID"):
         monkeypatch.delenv(key, raising=False)
-    server.set_client_for_tests(None)
     async with Client(server.mcp) as c:
         with pytest.raises(ToolError, match="setup"):
             await c.call_tool("get_my_team", {})
 
 
 @respx.mock
-async def test_save_settings_writes_file_and_verifies(league_json, isolated_config_path, monkeypatch):
+async def test_save_settings_writes_file_and_verifies(league_json, isolated_config_path, monkeypatch, no_client):
     monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
     monkeypatch.setenv("ESPN_SEASON", "2026")  # LEAGUE_URL is the 2026 endpoint
-    server.set_client_for_tests(None)
     respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
     async with Client(server.mcp) as c:
         result = await c.call_tool(
@@ -527,10 +533,9 @@ async def test_save_settings_writes_file_and_verifies(league_json, isolated_conf
 
 
 @respx.mock
-async def test_save_settings_reports_bad_cookies_but_keeps_values(isolated_config_path, monkeypatch):
+async def test_save_settings_reports_bad_cookies_but_keeps_values(isolated_config_path, monkeypatch, no_client):
     monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
     monkeypatch.setenv("ESPN_SEASON", "2026")
-    server.set_client_for_tests(None)
     respx.get(LEAGUE_URL).mock(return_value=httpx.Response(401))
     async with Client(server.mcp) as c:
         result = await c.call_tool(
@@ -558,3 +563,22 @@ async def test_save_settings_rejects_non_numeric_league_id(isolated_config_path)
         )
     assert result.data["ok"] is False
     assert "League ID" in result.data["error"]
+
+
+async def test_save_settings_missing_argument_never_raises_or_echoes(isolated_config_path):
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("save_settings", {"espn_s2": "SECRET_S2", "swid": "{SECRET}"})
+    assert result.data["ok"] is False
+    assert "SECRET" not in json.dumps(result.data)
+    assert not isolated_config_path.exists()
+
+
+@respx.mock
+async def test_save_settings_accepts_numeric_league_id(league_json, isolated_config_path, monkeypatch, no_client):
+    monkeypatch.setenv("ESPN_SEASON", "2026")
+    monkeypatch.setattr("fantasy_mcp.config.load_dotenv", lambda *a, **k: None)
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("save_settings", {"espn_s2": "s2", "swid": "{ABC-123}", "league_id": 4242})
+    assert result.data["ok"] is True
+    assert json.loads(isolated_config_path.read_text())["ESPN_LEAGUE_ID"] == "4242"
