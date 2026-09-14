@@ -433,3 +433,9 @@ def test_scoring_summary_half_ppr_and_split_rules():
     ]}}}
     summary = shapes.shape_league_settings(league)["scoring"]["summary"]
     assert summary == "Half PPR · 10 rush yds/pt · 5 rec yds/pt · 6-pt rush TD · 4-pt rec TD · -1 INT"
+
+
+def test_scoring_summary_flags_non_points_leagues():
+    league = {"settings": {"scoringSettings": {"scoringType": "H2H_CATEGORY", "scoringItems": []}}}
+    summary = shapes.shape_league_settings(league)["scoring"]["summary"]
+    assert summary.startswith("H2H_CATEGORY (not points-based")

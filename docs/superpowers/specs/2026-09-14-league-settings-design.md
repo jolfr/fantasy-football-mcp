@@ -57,7 +57,7 @@ trade advice uses the league's actual scoring (e.g. PPR vs standard).
   },
   "roster": {
     "lineup": {"QB": 1, ..., "BENCH": 7, "IR": 1},   // ids.LINEUP_SLOTS names, count > 0, in slot-id order
-    "position_limits": {"QB": 4, ...},               // ids.POSITIONS names, limits >= 0 only
+    "position_limits": {"QB": 4, ...},               // ids.POSITIONS names, limits > 0 only (ESPN emits a 0 for id 0)
     "move_limit": null,                              // -1 -> null (unlimited)
     "lineup_lock": "INDIVIDUAL_GAME"
   },

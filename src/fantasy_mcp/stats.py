@@ -76,7 +76,7 @@ def shape_stat_line(raw: dict[str, Any] | None) -> dict[str, int | float]:
 # Scoring-item ids (league settings) that don't appear in game logs, verified live.
 SCORING_STAT_NAMES: dict[int, str] = {
     **STAT_NAMES,
-    198: "fg_made_50_plus",
+    198: "fg_made_50_plus",  # scoring-item id; game logs use raw stat 74 for the same thing
     89: "dst_points_allowed_0",
     90: "dst_points_allowed_1_6",
     91: "dst_points_allowed_7_13",

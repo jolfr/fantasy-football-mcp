@@ -330,8 +330,10 @@ def _per_point(points: int | float) -> int | float:
     return _num(round(1 / points)) if points else 0
 
 
-def _scoring_summary(rules: dict[str, int | float]) -> str:
+def _scoring_summary(rules: dict[str, int | float], scoring_type: str | None = None) -> str:
     parts: list[str] = []
+    if scoring_type and "POINTS" not in scoring_type:
+        parts.append(f"{scoring_type} (not points-based; rules below may not apply)")
     ppr = rules.get("receptions", 0)
     parts.append(
         "Full PPR" if ppr == 1 else "Half PPR" if ppr == 0.5 else f"{ppr} PPR" if ppr else "Standard (no PPR)"
@@ -402,7 +404,7 @@ def shape_league_settings(league: dict[str, Any]) -> dict[str, Any]:
             "type": scoring.get("scoringType"),
             "ppr": rules.get("receptions", 0),
             "rules": rules,
-            "summary": _scoring_summary(rules),
+            "summary": _scoring_summary(rules, scoring.get("scoringType")),
         },
         "roster": {
             "lineup": lineup,
