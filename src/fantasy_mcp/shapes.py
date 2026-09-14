@@ -8,6 +8,8 @@ from typing import Any
 from fantasy_mcp import ids
 from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
+from fantasy_mcp.lineup import NON_STARTING_SLOTS, optimal_lineup
+from fantasy_mcp.schedules import game_context
 from fantasy_mcp.stats import scoring_name, shape_stat_line
 
 # player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
@@ -433,4 +435,80 @@ def shape_league_settings(league: dict[str, Any]) -> dict[str, Any]:
             "review_hours": trades.get("revisionHours"),
             "veto_votes_required": trades.get("vetoVotesRequired"),
         },
+    }
+
+
+def _projection_for(player: dict[str, Any], week: int, season: int) -> float | None:
+    return _stat(player, period=week, source=PROJECTION_SOURCE_ID, season=season)
+
+
+def _lineup_row(slot_id: int, row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "slot": ids.name(ids.LINEUP_SLOTS, slot_id),
+        "player_id": row["player_id"],
+        "name": row["name"],
+        "projected": row["projected"],
+    }
+
+
+def shape_projections(
+    week: int,
+    roster_entries: list[dict[str, Any]],
+    projections_players: list[dict[str, Any]],
+    schedules: dict[str, Any],
+    slot_counts: dict[int, int],
+) -> dict[str, Any]:
+    """Weekly projections for a roster plus a suggested optimal lineup and the changes to reach it."""
+    by_id = {p.get("id"): p.get("player") or {} for p in projections_players or []}
+    season = next((s.get("seasonId") for p in by_id.values() for s in (p.get("stats") or [])), -1)
+
+    rows: list[dict[str, Any]] = []
+    for entry in roster_entries or []:
+        base = _shape_player(entry)
+        player = by_id.get(base["player_id"]) or (entry.get("playerPoolEntry") or {}).get("player") or {}
+        pro_team_id = player.get("proTeamId")
+        context = game_context(schedules, pro_team_id, week)
+        rows.append(
+            {
+                **{k: base[k] for k in ("player_id", "name", "position", "pro_team", "injury_status", "slot")},
+                "opponent": context["opponent"],
+                "kickoff": context["kickoff"],
+                "projected": _projection_for(player, week, season) if by_id.get(base["player_id"]) else None,
+                "_slot_id": entry.get("lineupSlotId", 99),
+                "_eligible": player.get("eligibleSlots") or [],
+            }
+        )
+
+    starters = [r for r in rows if r["_slot_id"] not in NON_STARTING_SLOTS]
+    others = [r for r in rows if r["_slot_id"] in NON_STARTING_SLOTS]
+    starters.sort(key=lambda r: r["_slot_id"])
+    others.sort(key=lambda r: -(r["projected"] or 0))
+    ordered = starters + others
+
+    lineup_input = [
+        {"player_id": r["player_id"], "name": r["name"], "projected": r["projected"],
+         "eligible_slots": r["_eligible"], "slot_id": r["_slot_id"]}
+        for r in ordered
+    ]
+    assigned = optimal_lineup(lineup_input, slot_counts or {})
+    suggested = [_lineup_row(slot, row) for slot in sorted(assigned) for row in assigned[slot]]
+
+    current_ids = {r["player_id"] for r in starters}
+    suggested_ids = {r["player_id"] for r in suggested}
+    current_total = round(sum(r["projected"] or 0 for r in starters), 2)
+    suggested_total = round(sum(r["projected"] or 0 for r in suggested), 2)
+    sit = [
+        {"slot": r["slot"], "player_id": r["player_id"], "name": r["name"], "projected": r["projected"]}
+        for r in starters if r["player_id"] not in suggested_ids
+    ]
+    start = [r for r in suggested if r["player_id"] not in current_ids]
+
+    public_rows = [{k: v for k, v in r.items() if not k.startswith("_")} for r in ordered]
+    return {
+        "week": week,
+        "players": public_rows,
+        "current_total": current_total,
+        "suggested_lineup": suggested,
+        "suggested_total": suggested_total,
+        "changes": {"start": start, "sit": sit, "gain": round(suggested_total - current_total, 2)},
     }

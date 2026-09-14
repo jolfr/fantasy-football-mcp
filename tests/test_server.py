@@ -262,13 +262,63 @@ async def test_get_league_settings_tool(client, league_settings_json):
     assert route.calls.last.request.url.params.get_list("view") == ["mSettings"]
 
 
-async def test_six_tools_registered(client):
-    async with Client(server.mcp) as c:
-        names = sorted(t.name for t in await c.list_tools())
-    assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team", "get_player", "whoami"]
-
-
 def test_instructions_name_both_config_locations():
     assert "Settings → Extensions" in INSTRUCTIONS
     assert ".env" in INSTRUCTIONS
     assert "server's .env file" not in INSTRUCTIONS
+
+
+@pytest.fixture
+def cached_schedules(pro_schedules_json):
+    server.set_pro_schedules_for_tests(pro_schedules_json)
+    yield pro_schedules_json
+    server.set_pro_schedules_for_tests(None)
+
+
+@respx.mock
+async def test_get_projections_tool(client, cached_schedules, roster_settings_json, projections_json):
+    def respond(request):
+        views = request.url.params.get_list("view")
+        return httpx.Response(200, json=projections_json if "kona_player_info" in views else roster_settings_json)
+
+    route = respx.get(LEAGUE_URL).mock(side_effect=respond)
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_projections", {"week": 2})
+    assert result.data["week"] == 2
+    assert result.data["changes"]["start"][0]["name"] == "WR Bench"
+    calls = [r.request for r in route.calls]
+    assert calls[0].url.params.get_list("view") == ["mRoster", "mSettings"]
+    assert calls[1].url.params.get_list("view") == ["kona_player_info"]
+    assert calls[1].url.params["scoringPeriodId"] == "2"
+    sent = json.loads(calls[1].headers["x-fantasy-filter"])["players"]["filterIds"]["value"]
+    assert 4242335 in sent and len(sent) == 8
+
+
+@respx.mock
+async def test_get_projections_defaults_to_current_week(client, cached_schedules, roster_settings_json, projections_json):
+    def respond(request):
+        views = request.url.params.get_list("view")
+        return httpx.Response(200, json=projections_json if "kona_player_info" in views else roster_settings_json)
+
+    route = respx.get(LEAGUE_URL).mock(side_effect=respond)
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_projections", {})
+    assert result.data["week"] == 1
+    assert route.calls[1].request.url.params["scoringPeriodId"] == "1"
+
+
+@respx.mock
+@pytest.mark.parametrize("week", [0, 19])
+async def test_get_projections_rejects_bad_week(client, week):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="week must be between 1 and 18"):
+            await c.call_tool("get_projections", {"week": week})
+    assert not route.called
+
+
+async def test_seven_tools_registered(client):
+    async with Client(server.mcp) as c:
+        names = sorted(t.name for t in await c.list_tools())
+    assert names == ["get_free_agents", "get_league_settings", "get_matchup", "get_my_team",
+                     "get_player", "get_projections", "whoami"]

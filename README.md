@@ -93,6 +93,7 @@ uv sync
 - `get_my_team` — your record, points, and roster with lineup slots.
 - `get_matchup` — this week's head-to-head: live score, projection, win
   probability, and both rosters with per-player actual/projected points.
+- `get_projections` — this (or any) week's ESPN projections for your roster with opponent/bye/kickoff, plus a suggested optimal lineup and the start/sit changes to reach it.
 - `get_free_agents` — available players (free agents + waivers), optionally by
   position, sorted by % rostered or season projection, with ownership trend,
   projections, and positional rank.

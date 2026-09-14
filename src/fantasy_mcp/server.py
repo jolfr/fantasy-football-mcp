@@ -14,7 +14,13 @@ from fastmcp.tools import ToolResult
 from fantasy_mcp.cards import player_card
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
-from fantasy_mcp.filters import FilterError, free_agent_filter, normalize_position, player_card_filter
+from fantasy_mcp.filters import (
+    FilterError,
+    free_agent_filter,
+    normalize_position,
+    player_card_filter,
+    player_ids_filter,
+)
 from fantasy_mcp.players import resolve_player
 from fantasy_mcp.shapes import (
     find_matchup,
@@ -22,6 +28,7 @@ from fantasy_mcp.shapes import (
     shape_league_settings,
     shape_matchup,
     shape_player_card,
+    shape_projections,
     shape_team,
     shape_whoami,
     team_by_id,
@@ -40,13 +47,16 @@ waiver, or "who's available" questions, and compare candidates against the
 roster from get_my_team before recommending a move. Use get_player for
 questions about a specific player (history, outlook, who owns them); pass
 player_id from another tool's output when you have it. Only whoami,
-get_league_settings, get_my_team, get_matchup, get_free_agents, and get_player
-exist. There is no standings, transaction, or past-week matchup data yet --
-say so instead of inventing it.
+get_league_settings, get_my_team, get_matchup, get_projections, get_free_agents,
+and get_player exist. There is no standings, transaction, or past-week matchup
+data yet -- say so instead of inventing it.
 
-Call get_league_settings before start/sit, pickup, or trade advice so
-recommendations use this league's scoring (PPR or not) and roster limits;
-its result is stable for the season, so one call per conversation is enough.
+For start/sit or "set my lineup", call get_projections (pass next week's
+number once this week's games have started) and present its changes; it
+already applies this league's lineup slots. Call get_league_settings before
+pickup or trade advice so recommendations use this league's scoring (PPR or
+not) and roster limits; its result is stable for the season, so one call per
+conversation is enough.
 
 Nothing here can modify the team. If the user asks to make a move, describe
 what to do and let them do it on ESPN.
@@ -92,6 +102,22 @@ def _get_players_index(client: EspnClient) -> list[dict[str, Any]]:
 def set_players_index_for_tests(index: list[dict[str, Any]] | None) -> None:
     global _players_index
     _players_index = index
+
+
+_pro_schedules: dict[str, Any] | None = None
+
+
+def _get_pro_schedules(client: EspnClient) -> dict[str, Any]:
+    """ESPN's NFL schedule/bye table, fetched once per process."""
+    global _pro_schedules
+    if _pro_schedules is None:
+        _pro_schedules = client.get_pro_schedules()
+    return _pro_schedules
+
+
+def set_pro_schedules_for_tests(schedules: dict[str, Any] | None) -> None:
+    global _pro_schedules
+    _pro_schedules = schedules
 
 
 # --- tools -------------------------------------------------------------------
@@ -181,6 +207,51 @@ def get_matchup() -> dict[str, Any]:
         game = find_matchup(league, team_id, week)
         return shape_matchup(game, league, team_id)
     except (EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+MAX_WEEK = 18
+
+
+@mcp.tool
+def get_projections(week: int | None = None) -> dict[str, Any]:
+    """ESPN projections for the user's roster for one NFL week, with a suggested optimal lineup.
+
+    Use this for "set my lineup", "start X or Y?", or "who's on bye?". week
+    defaults to the current NFL week; once this week's games have started,
+    pass next week's number to plan ahead (projections exist as soon as ESPN
+    publishes them, usually the Tuesday before).
+
+    players: every rostered player with slot (current lineup slot), opponent
+    ("@KC" away, "vs KC" home, "BYE"), kickoff (UTC), and projected (ESPN's
+    points projection for that week; null if ESPN has none). suggested_lineup
+    fills this league's starting slots (including FLEX-type slots and their
+    eligibility rules) to maximize projected points; players on IR are never
+    moved. changes lists who to start and who to sit to get there, with the
+    projected gain. Present changes to the user rather than the whole table
+    when they ask for lineup advice.
+    """
+    if week is not None and not 1 <= week <= MAX_WEEK:
+        raise ToolError(f"week must be between 1 and {MAX_WEEK} (got {week}).")
+    try:
+        client = _get_client()
+        league = client.get("mRoster", "mSettings")
+        team_id = client.find_my_team_id(league)
+        entries = (team_by_id(league, team_id).get("roster") or {}).get("entries") or []
+        counts = {
+            int(slot): count
+            for slot, count in ((league.get("settings") or {}).get("rosterSettings") or {})
+            .get("lineupSlotCounts", {})
+            .items()
+        }
+        target_week = week or league.get("scoringPeriodId") or 1
+        ids_ = [e.get("playerId") for e in entries if e.get("playerId") is not None]
+        proj = client.get(
+            "kona_player_info", fantasy_filter=player_ids_filter(ids_), scoring_period=target_week
+        )
+        schedules = _get_pro_schedules(client)
+        return shape_projections(target_week, entries, proj.get("players") or [], schedules, counts)
+    except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
 

@@ -439,3 +439,53 @@ def test_scoring_summary_flags_non_points_leagues():
     league = {"settings": {"scoringSettings": {"scoringType": "H2H_CATEGORY", "scoringItems": []}}}
     summary = shapes.shape_league_settings(league)["scoring"]["summary"]
     assert summary.startswith("H2H_CATEGORY (not points-based")
+
+
+def _proj_args(roster_settings_json, projections_json, pro_schedules_json):
+    team = roster_settings_json["teams"][0]
+    counts = {int(k): v for k, v in roster_settings_json["settings"]["rosterSettings"]["lineupSlotCounts"].items()}
+    return 2, team["roster"]["entries"], projections_json["players"], pro_schedules_json, counts
+
+
+def test_shape_projections_rows_and_lineup(roster_settings_json, projections_json, pro_schedules_json):
+    out = shapes.shape_projections(*_proj_args(roster_settings_json, projections_json, pro_schedules_json))
+    assert out["week"] == 2
+    names = [p["name"] for p in out["players"]]
+    assert names == ["QB One", "RB One", "WR One", "WR Two", "TE One", "Def One", "Kicker One", "WR Bench"]
+    rb = out["players"][1]
+    assert rb == {
+        "player_id": 4242335, "name": "RB One", "position": "RB", "pro_team": "IND",
+        "injury_status": "ACTIVE", "slot": "RB", "opponent": "@KC",
+        "kickoff": "2026-09-21T00:20:00Z", "projected": 17.68,
+    }
+    assert out["players"][5]["opponent"] == "vs NO"
+    assert out["current_total"] == 92.76
+    assert out["suggested_total"] == 102.78
+    assert [(r["slot"], r["name"]) for r in out["suggested_lineup"]] == [
+        ("QB", "QB One"), ("RB", "RB One"), ("WR", "WR One"), ("WR", "WR Two"), ("TE", "TE One"),
+        ("D/ST", "Def One"), ("K", "Kicker One"), ("FLEX", "WR Bench"),
+    ]
+    assert out["changes"] == {
+        "start": [{"slot": "FLEX", "player_id": 3916433, "name": "WR Bench", "projected": 10.02}],
+        "sit": [],
+        "gain": 10.02,
+    }
+
+
+def test_shape_projections_bye_and_missing_projection(roster_settings_json, projections_json, pro_schedules_json):
+    for team in pro_schedules_json["settings"]["proTeams"]:
+        if team["id"] == 11:
+            team["byeWeek"] = 2
+    projections_json["players"] = [p for p in projections_json["players"] if p["id"] != 4361050]  # drop TE
+    out = shapes.shape_projections(*_proj_args(roster_settings_json, projections_json, pro_schedules_json))
+    rb = next(p for p in out["players"] if p["name"] == "RB One")
+    assert rb["opponent"] == "BYE" and rb["kickoff"] is None
+    te = next(p for p in out["players"] if p["name"] == "TE One")
+    assert te["projected"] is None
+    assert out["current_total"] == round(92.76 - 9.96, 2)
+
+
+def test_shape_projections_empty_inputs():
+    out = shapes.shape_projections(1, [], [], {}, {})
+    assert out == {"week": 1, "players": [], "current_total": 0, "suggested_lineup": [],
+                   "suggested_total": 0, "changes": {"start": [], "sit": [], "gain": 0}}
