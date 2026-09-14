@@ -7,6 +7,7 @@ from fantasy_mcp.filters import (
     SORTS,
     free_agent_filter,
     normalize_position,
+    player_card_filter,
 )
 
 STATUS = {"value": ["FREEAGENT", "WAIVERS"]}
@@ -86,3 +87,15 @@ def test_limit_boundaries_are_valid(limit):
 @pytest.mark.parametrize("raw, expected", [("rb", "RB"), ("d/st", "D_ST"), ("D_ST", "D_ST")])
 def test_normalize_position(raw, expected):
     assert normalize_position(raw) == expected
+
+
+def test_player_card_filter_requests_totals_and_all_weekly_projections():
+    out = player_card_filter(4242335, season=2026)
+    players = out["players"]
+    assert players["filterIds"] == {"value": [4242335]}
+    top = players["filterStatsForTopScoringPeriodIds"]
+    assert top["value"] == 17
+    assert top["additionalValue"][:3] == ["002026", "102026", "002025"]
+    assert top["additionalValue"][3:] == [f"112026{w}" for w in range(1, 19)]
+    assert len(top["additionalValue"]) == 21
+    assert set(players) == {"filterIds", "filterStatsForTopScoringPeriodIds"}

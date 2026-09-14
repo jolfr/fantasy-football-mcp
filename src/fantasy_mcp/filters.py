@@ -59,3 +59,18 @@ def free_agent_filter(
         players["sortPercOwned"] = {"sortPriority": 1, "sortAsc": False}
 
     return {"players": players}
+
+
+WEEKS_IN_SEASON = 18
+
+
+def player_card_filter(player_id: int, *, season: int) -> dict[str, Any]:
+    """Filter for one player's card: season totals, last season, and weekly projections."""
+    stat_ids = [f"00{season}", f"10{season}", f"00{season - 1}"]
+    stat_ids += [f"11{season}{week}" for week in range(1, WEEKS_IN_SEASON + 1)]
+    return {
+        "players": {
+            "filterIds": {"value": [player_id]},
+            "filterStatsForTopScoringPeriodIds": {"value": 17, "additionalValue": stat_ids},
+        }
+    }
