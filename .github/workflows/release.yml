@@ -42,7 +42,10 @@ jobs:
           npx -y @anthropic-ai/mcpb@2.1.2 validate manifest.json
           npx -y @anthropic-ai/mcpb@2.1.2 pack . fantasy-mcp.mcpb
           unzip -l fantasy-mcp.mcpb
-          ! unzip -l fantasy-mcp.mcpb | grep -E ' (tests|docs|\.venv|\.git|\.worktrees)/| \.env$'
+          if unzip -l fantasy-mcp.mcpb | grep -E ' (tests|docs|\.venv|\.git|\.worktrees)/| \.env$'; then
+            echo "::error::Bundle contains files that should be excluded (see matches above)"
+            exit 1
+          fi
 
       - name: Create GitHub Release
         env:
