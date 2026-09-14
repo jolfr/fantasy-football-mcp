@@ -577,7 +577,7 @@ def save_settings(espn_s2: str, swid: str, league_id: str) -> dict[str, Any]:
     }
 ```
 
-Check `shape_whoami`'s keys with `grep -n "def shape_whoami" -A 12 src/fantasy_mcp/shapes.py` and use its actual key names for league/team/season.
+`shape_whoami` returns `league_id`, `season`, `league_name`, `team_id`, `team_name` — the keys used above are correct.
 
 No change is needed in the other tools: they already catch `ConfigError` and raise `ToolError(str(e))`, and the message now names `setup`.
 
@@ -600,7 +600,7 @@ Existing tests `test_instructions_name_both_config_locations` and `test_instruct
 
 - [ ] **Step 5: Amend the spec**
 
-In `docs/superpowers/specs/2026-09-14-in-chat-setup-design.md` section 2, replace the "Unconfigured calls: …" bullet with: "Unconfigured calls: Desktop renders a card only for `app=True` tools, so other tools cannot return the card. `load_settings` raises `ConfigError` whose message names the `setup` tool; tools surface it as a `ToolError`, and `INSTRUCTIONS` tells Claude to call `setup`." Remove the sentence "Tools that return `dict` today change their return annotation to `dict | ToolResult`." In section 5, change "`get_my_team` while unconfigured returns the same card" to "`get_my_team` while unconfigured raises a `ToolError` naming `setup`."
+In `docs/superpowers/specs/2026-09-14-in-chat-setup-design.md` section 2, replace the "Unconfigured calls: …" bullet with: "Unconfigured calls: Desktop renders a card only for `app=True` tools, so other tools cannot return the card. `load_settings` raises `ConfigError` whose message names the `setup` tool; tools surface it as a `ToolError`, and `INSTRUCTIONS` tells Claude to call `setup`." Remove the sentence "Tools that return `dict` today change their return annotation to `dict | ToolResult`." Also change the `save_settings` signature in section 2 to `save_settings(espn_s2: str, swid: str, league_id: str)` — Season/Team ID are out of the card's scope, and string arguments let the card pass `{{ league_id }}` without relying on host-side coercion. In section 5, change "`get_my_team` while unconfigured returns the same card" to "`get_my_team` while unconfigured raises a `ToolError` naming `setup`."
 
 - [ ] **Step 6: Run the suite**
 
