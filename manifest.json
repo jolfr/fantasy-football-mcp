@@ -11,13 +11,13 @@
     "type": "git",
     "url": "https://github.com/jolfr/fantasy-football-mcp"
   },
-  "license": "GPL-2.0",
+  "license": "GPL-2.0-only",
   "server": {
     "type": "uv",
     "entry_point": "src/fantasy_mcp/server.py",
     "mcp_config": {
       "command": "uv",
-      "args": ["run", "--directory", "${__dirname}", "fantasy-mcp"],
+      "args": ["run", "--frozen", "--no-dev", "--directory", "${__dirname}", "fantasy-mcp"],
       "env": {
         "ESPN_S2": "${user_config.espn_s2}",
         "ESPN_SWID": "${user_config.swid}",
@@ -31,14 +31,14 @@
     "espn_s2": {
       "type": "string",
       "title": "espn_s2 cookie",
-      "description": "From your browser's cookies for espn.com while logged in to ESPN. See README: Get your ESPN cookies.",
+      "description": "Copy from your browser's cookies for espn.com (dev tools → Application → Cookies) while logged in to ESPN. Step-by-step: https://github.com/jolfr/fantasy-football-mcp#get-your-espn-cookies-and-league-id",
       "sensitive": true,
       "required": true
     },
     "swid": {
       "type": "string",
       "title": "SWID cookie",
-      "description": "Same place as espn_s2. Keep the curly braces.",
+      "description": "Same place as espn_s2. Keep the curly braces, e.g. {1234ABCD-...}.",
       "sensitive": true,
       "required": true
     },
@@ -51,13 +51,13 @@
     "season": {
       "type": "number",
       "title": "Season (optional)",
-      "description": "Defaults to the current calendar year. Set it during Jan-Jul to keep looking at last season.",
+      "description": "Defaults to the current calendar year (e.g. 2026). Set it during Jan-Jul to keep looking at last season.",
       "required": false
     },
     "team_id": {
       "type": "number",
       "title": "Team ID (optional)",
-      "description": "Leave blank to auto-detect your team from your SWID.",
+      "description": "Leave blank to auto-detect your team from your SWID, or enter the teamId=... number from your team's URL.",
       "required": false
     }
   },
