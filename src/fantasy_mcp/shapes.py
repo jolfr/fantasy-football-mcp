@@ -158,19 +158,23 @@ def _shape_side(side: dict[str, Any], league: dict[str, Any]) -> dict[str, Any]:
     scoring_period = league.get("scoringPeriodId", -1)
     season = league.get("seasonId", -1)  # -1: no stat can match; never guess a year
     roster = [_shape_matchup_player(e, scoring_period, season) for e in entries]
+    projected_source = "espn" if projected is not None else None
     if projected is None:
         # Future weeks: ESPN has no team projection yet, but per-player ones exist.
         starter_projections = [
-            r["projected"] for r, e in zip(roster, entries)
+            r["projected"]
+            for r, e in zip(roster, entries)
             if e.get("lineupSlotId") not in NON_STARTING_SLOTS and r["projected"] is not None
         ]
-        projected = sum(starter_projections) if starter_projections else None
+        if starter_projections:
+            projected, projected_source = sum(starter_projections), "sum_of_starters"
     return {
         "team_id": team_id,
         "name": team.get("name"),
         "abbrev": team.get("abbrev"),
         "score": _side_score(side),
         "projected": _round(projected),
+        "projected_source": projected_source,
         "win_probability": side.get("winProbability"),
         "roster": roster,
     }

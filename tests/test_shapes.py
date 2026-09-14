@@ -160,10 +160,12 @@ def test_shape_matchup_falls_back_to_total_points_and_null_projection(matchup_js
     out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
     assert out["my_team"]["score"] == 101.23
     assert out["my_team"]["projected"] == 17.77  # falls back to the sum of starters' projections
+    assert out["my_team"]["projected_source"] == "sum_of_starters"
     assert out["my_team"]["win_probability"] is None
     for entry in game["home"]["rosterForCurrentScoringPeriod"]["entries"]:
         entry["playerPoolEntry"]["player"].pop("stats", None)
-    assert shapes.shape_matchup(game, matchup_json, my_team_id=12)["my_team"]["projected"] is None
+    side = shapes.shape_matchup(game, matchup_json, my_team_id=12)["my_team"]
+    assert side["projected"] is None and side["projected_source"] is None
 
 
 def test_shape_matchup_unknown_opponent_and_missing_roster(matchup_json):
@@ -592,3 +594,16 @@ def test_shape_matchup_projected_falls_back_to_sum_of_starter_projections(matchu
     out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
     # Home starters with projections: Starter One 17.77 (NoStats has none); bench/IR excluded.
     assert out["my_team"]["projected"] == 17.77
+
+
+def test_shape_matchup_final_past_week_uses_final_totals(matchup_json):
+    game = matchup_json["schedule"][0]
+    game["winner"] = "HOME"
+    for side in ("home", "away"):
+        game[side].pop("totalPointsLive", None)
+        game[side].pop("totalProjectedPointsLive", None)
+    game["home"]["totalPoints"], game["away"]["totalPoints"] = 120.5, 99.25
+    out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
+    assert out["status"] == "FINAL"
+    assert out["my_team"]["score"] == 120.5 and out["opponent"]["score"] == 99.25
+    assert out["my_team"]["projected_source"] == "espn"  # totalProjectedPoints still present

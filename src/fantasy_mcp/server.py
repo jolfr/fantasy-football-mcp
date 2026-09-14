@@ -43,8 +43,9 @@ Use these tools for any question about the user's team or league rather than
 answering from memory. Call get_my_team before giving lineup, start/sit, or
 roster advice, and base the advice on the roster and injury statuses it returns.
 
-Use get_matchup for anything about this week's game: score, projection, win
-probability, opponent, or per-player points. Use get_free_agents for pickup,
+Use get_matchup for anything about this week's game (or a past result / next
+week's preview via its week argument): score, projection, win probability,
+opponent, or per-player points. Use get_free_agents for pickup,
 waiver, or "who's available" questions, and compare candidates against the
 roster from get_my_team before recommending a move. Use get_player for
 questions about a specific player (history, outlook, who owns them); pass
@@ -53,8 +54,7 @@ call compare_players with all the names at once rather than get_player
 repeatedly. Use get_standings for records, rankings, the playoff picture, or
 waiver order. Only whoami, get_league_settings, get_standings, get_my_team,
 get_matchup, get_projections, get_free_agents, get_player, and compare_players
-exist. get_matchup takes an optional week for past results or next week's
-preview. There is no transaction data yet -- say so instead of inventing it.
+exist. There is no transaction data yet -- say so instead of inventing it.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
@@ -228,7 +228,9 @@ def get_matchup(week: int | None = None) -> dict[str, Any]:
 
     Top level: week; status (UPCOMING, IN_PROGRESS, or FINAL); is_home; my_team;
     opponent. Each team has: team_id, name, abbrev, score (fantasy points so far
-    this week), projected (ESPN's live projection for the week's final score),
+    this week), projected (ESPN's live projection for the week's final score, or
+    for a future week the sum of starters' player projections -- see
+    projected_source: "espn" | "sum_of_starters" | null),
     win_probability (0-1, may be null), and roster. Each roster row has the same
     fields as get_my_team (player_id, name, position, slot, pro_team, injury_status) plus
     points (scored so far this week) and projected (ESPN's projection for this
@@ -248,7 +250,6 @@ def get_matchup(week: int | None = None) -> dict[str, Any]:
         return {"current_week": current_week, **shape_matchup(game, league, team_id)}
     except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
-
 
 
 @mcp.tool
