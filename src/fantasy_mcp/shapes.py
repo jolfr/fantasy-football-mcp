@@ -15,6 +15,9 @@ SEASON_PERIOD = 0
 ACTUAL_SOURCE_ID = 0
 PROJECTION_SOURCE_ID = 1
 
+BENCH_SLOT = 20
+IR_SLOT = 21
+
 
 def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
     for team in league.get("teams", []):
@@ -60,7 +63,7 @@ def _shape_player(entry: dict[str, Any]) -> dict[str, Any]:
 def _slot_sort_key(entry: dict[str, Any]) -> tuple[int, int]:
     slot = entry.get("lineupSlotId", 99)
     # Starters (anything not bench/IR) first, then bench, then IR.
-    bucket = {20: 1, 21: 2}.get(slot, 0)
+    bucket = {BENCH_SLOT: 1, IR_SLOT: 2}.get(slot, 0)
     return (bucket, slot)
 
 
@@ -212,7 +215,7 @@ def shape_free_agent(entry: dict[str, Any], scoring_period: int, season: int) ->
     }
 
 
-_NON_STARTING_SLOTS = {20, 21}  # BENCH, IR
+_NON_STARTING_SLOTS = {BENCH_SLOT, IR_SLOT}
 
 
 def _game_log(player: dict[str, Any], season: int) -> list[dict[str, Any]]:

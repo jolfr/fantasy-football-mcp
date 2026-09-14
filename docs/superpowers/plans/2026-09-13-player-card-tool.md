@@ -510,7 +510,7 @@ Fixture facts (`player_card.json`): `seasonId 2026`, `scoringPeriodId 1`, one te
 
 - [ ] **Step 1: Verify fixture; add conftest fixture**
 
-Run: `uv run python -c "import json; d=json.load(open('tests/fixtures/player_card.json')); print(d['scoringPeriodId'], d['players'][0]['player']['fullName'], len(d['players'][0]['player']['stats']))"` → `1 Card Back 8`. Missing → BLOCKED.
+Run: `uv run python -c "import json; d=json.load(open('tests/fixtures/player_card.json')); print(d['scoringPeriodId'], d['players'][0]['player']['fullName'], len(d['players'][0]['player']['stats']))"` → `1 Card Back 9`. Missing → BLOCKED.
 
 Append to `tests/conftest.py`:
 ```python

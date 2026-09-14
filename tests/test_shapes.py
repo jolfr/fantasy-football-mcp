@@ -310,7 +310,18 @@ def test_shape_player_card_full(player_card_json):
     }
     assert log[1]["projected"] is None
     assert log[1]["stats"]["rush_yds"] == 26
-    assert "41" not in str(log)  # unmapped raw id never leaks
+    assert "41" not in log[0]["stats"]  # unmapped raw id never leaks
+    # 2024 rows (both the season total and the week-17 game) are outside season/season-1.
+    assert all(g["season"] in (2026, 2025) for g in log)
+
+
+def test_shape_player_card_unknown_owner_team_and_id_fallback(player_card_json):
+    entry = player_card_json["players"][0]
+    entry["onTeamId"] = 99
+    del entry["id"]
+    out = shapes.shape_player_card(entry, player_card_json)
+    assert out["owned_by"] is None
+    assert out["player_id"] == 4242335  # from player.id
 
 
 def test_shape_player_card_unrostered_and_sparse(player_card_json):

@@ -52,6 +52,15 @@
             "appliedTotal": 777.7
           },
           {
+            "seasonId": 2024,
+            "scoringPeriodId": 17,
+            "statSourceId": 0,
+            "appliedTotal": 9.9,
+            "stats": {
+              "24": 50.0
+            }
+          },
+          {
             "seasonId": 2026,
             "scoringPeriodId": 1,
             "statSourceId": 0,
