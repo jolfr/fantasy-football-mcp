@@ -1,0 +1,65 @@
+[
+  {
+    "id": 4362628,
+    "fullName": "Tre Tucker",
+    "defaultPositionId": 3,
+    "proTeamId": 13,
+    "ownership": {
+      "percentOwned": 25.0
+    }
+  },
+  {
+    "id": 4572680,
+    "fullName": "Tucker Kraft",
+    "defaultPositionId": 4,
+    "proTeamId": 9,
+    "ownership": {
+      "percentOwned": 80.0
+    }
+  },
+  {
+    "id": 15683,
+    "fullName": "Justin Tucker",
+    "defaultPositionId": 5,
+    "proTeamId": 33,
+    "ownership": {
+      "percentOwned": 40.0
+    }
+  },
+  {
+    "id": 1001,
+    "fullName": "A.J. Brown",
+    "defaultPositionId": 3,
+    "proTeamId": 21,
+    "ownership": {
+      "percentOwned": 99.0
+    }
+  },
+  {
+    "id": 4242335,
+    "fullName": "Jonathan Taylor",
+    "defaultPositionId": 2,
+    "proTeamId": 11,
+    "ownership": {
+      "percentOwned": 99.9
+    }
+  },
+  {
+    "id": 2001,
+    "fullName": "Sam Smith",
+    "defaultPositionId": 1,
+    "proTeamId": 1,
+    "ownership": {
+      "percentOwned": 1.0
+    }
+  },
+  {
+    "id": 2002,
+    "fullName": "Sam Smith",
+    "defaultPositionId": 3,
+    "proTeamId": 2,
+    "ownership": {
+      "percentOwned": 2.0
+    }
+  }
+]
