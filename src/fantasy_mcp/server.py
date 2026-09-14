@@ -9,11 +9,13 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp.config import ConfigError, load_settings
 from fantasy_mcp.espn import EspnClient, EspnError
-from fantasy_mcp.filters import FilterError, free_agent_filter, normalize_position
+from fantasy_mcp.filters import FilterError, free_agent_filter, normalize_position, player_card_filter
+from fantasy_mcp.players import resolve_player
 from fantasy_mcp.shapes import (
     find_matchup,
     shape_free_agent,
     shape_matchup,
+    shape_player_card,
     shape_team,
     shape_whoami,
     team_by_id,
@@ -29,9 +31,12 @@ roster advice, and base the advice on the roster and injury statuses it returns.
 Use get_matchup for anything about this week's game: score, projection, win
 probability, opponent, or per-player points. Use get_free_agents for pickup,
 waiver, or "who's available" questions, and compare candidates against the
-roster from get_my_team before recommending a move. Only whoami, get_my_team,
-get_matchup, and get_free_agents exist. There is no standings, transaction,
-or past-week data yet -- say so instead of inventing it.
+roster from get_my_team before recommending a move. Use get_player for
+questions about a specific player (history, outlook, who owns them); pass
+player_id from another tool's output when you have it. Only whoami,
+get_my_team, get_matchup, get_free_agents, and get_player exist. There is no
+standings, transaction, or past-week matchup data yet -- say so instead of
+inventing it.
 
 Nothing here can modify the team. If the user asks to make a move, describe
 what to do and let them do it on ESPN.
@@ -56,6 +61,22 @@ def _get_client() -> EspnClient:
 def set_client_for_tests(client: EspnClient | None) -> None:
     global _client
     _client = client
+
+
+_players_index: list[dict[str, Any]] | None = None
+
+
+def _get_players_index(client: EspnClient) -> list[dict[str, Any]]:
+    """ESPN's active-player index, fetched once per process (used for name lookup)."""
+    global _players_index
+    if _players_index is None:
+        _players_index = client.get_players_index()
+    return _players_index
+
+
+def set_players_index_for_tests(index: list[dict[str, Any]] | None) -> None:
+    global _players_index
+    _players_index = index
 
 
 # --- tools -------------------------------------------------------------------
@@ -169,6 +190,42 @@ def get_free_agents(
             "sort": sort,
             "players": players,
         }
+    except (FilterError, EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool
+def get_player(name: str | None = None, player_id: int | None = None) -> dict[str, Any]:
+    """Full profile for one player: status, league ownership, season numbers, outlook, game log.
+
+    Use this for "tell me about X", "how has X been doing", "who has X in my
+    league", or "is X worth a claim". Pass exactly one of: name (full name is
+    best; a partial name works if it matches one active player) or player_id
+    (from any other tool's rows -- prefer this when you have it).
+
+    Returns: player_id, name, position, pro_team, injury_status, injured,
+    eligible_slots; league_status (ONTEAM / FREEAGENT / WAIVERS) and owned_by
+    (the league team rostering them, or null); ownership across all ESPN leagues
+    (percent_owned, percent_started, percent_change = trend, adp); season
+    {year, projected, points, positional_rank}; last_season {year, points};
+    outlook (ESPN's written preseason summary); game_log newest first, each
+    week with points, projected (null until ESPN publishes it), and stats --
+    raw counts such as rush_yds, targets, pass_td, fg_made_40_49, dst_sacks
+    (zero-valued stats omitted). Covers this season and last. No news
+    articles or opponent-matchup ratings.
+    """
+    if (name is None) == (player_id is None):
+        raise ToolError("Pass exactly one of name or player_id.")
+    try:
+        client = _get_client()
+        if player_id is None:
+            player_id = resolve_player(name, _get_players_index(client))
+        fantasy_filter = player_card_filter(player_id, season=client.settings.season)
+        league = client.get("kona_playercard", "mTeam", "mStatus", fantasy_filter=fantasy_filter)
+        entries = league.get("players") or []
+        if not entries:
+            raise EspnError(f"ESPN returned no player with id {player_id}.")
+        return shape_player_card(entries[0], league)
     except (FilterError, EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 

@@ -9,7 +9,7 @@ from fastmcp.exceptions import ToolError
 
 from fantasy_mcp import server
 from fantasy_mcp.espn import EspnClient
-from tests.conftest import LEAGUE_URL
+from tests.conftest import LEAGUE_URL, PLAYERS_URL
 
 
 @pytest.fixture
@@ -145,3 +145,78 @@ async def test_get_free_agents_invalid_position_is_tool_error(client):
         with pytest.raises(ToolError, match="position must be one of"):
             await c.call_tool("get_free_agents", {"position": "FLEX"})
     assert not route.called
+
+
+@pytest.fixture
+def cached_index(players_index):
+    server.set_players_index_for_tests(players_index)
+    yield players_index
+    server.set_players_index_for_tests(None)
+
+
+@respx.mock
+async def test_get_player_by_name(client, cached_index, player_card_json):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=player_card_json))
+    index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=[]))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_player", {"name": "jonathan taylor"})
+    assert result.data["player_id"] == 4242335
+    assert result.data["name"] == "Card Back"
+    assert result.data["owned_by"]["team_id"] == 12
+    assert not index_route.called  # cache injected, no index fetch
+    req = route.calls.last.request
+    assert req.url.params.get_list("view") == ["kona_playercard", "mTeam", "mStatus"]
+    sent = json.loads(req.headers["x-fantasy-filter"])["players"]
+    assert sent["filterIds"] == {"value": [4242335]}
+    assert len(sent["filterStatsForTopScoringPeriodIds"]["additionalValue"]) == 21
+
+
+@respx.mock
+async def test_get_player_by_id_skips_index(client, player_card_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=player_card_json))
+    index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=[]))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_player", {"player_id": 4242335})
+    assert result.data["player_id"] == 4242335
+    assert not index_route.called
+
+
+@respx.mock
+async def test_get_player_fetches_and_caches_index(client, players_index, player_card_json):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=player_card_json))
+    index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=players_index))
+    server.set_players_index_for_tests(None)
+    try:
+        async with Client(server.mcp) as c:
+            await c.call_tool("get_player", {"name": "Jonathan Taylor"})
+            await c.call_tool("get_player", {"name": "Jonathan Taylor"})
+    finally:
+        server.set_players_index_for_tests(None)
+    assert index_route.call_count == 1
+
+
+@respx.mock
+@pytest.mark.parametrize("args", [{}, {"name": "x", "player_id": 1}])
+async def test_get_player_requires_exactly_one_arg(client, args):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="exactly one of name or player_id"):
+            await c.call_tool("get_player", args)
+    assert not route.called
+
+
+@respx.mock
+async def test_get_player_ambiguous_name_is_tool_error(client, cached_index):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="id 4572680"):
+            await c.call_tool("get_player", {"name": "tucker"})
+    assert not route.called
+
+
+@respx.mock
+async def test_get_player_unknown_id_is_tool_error(client):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={"players": [], "teams": []}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="no player with id 42"):
+            await c.call_tool("get_player", {"player_id": 42})
