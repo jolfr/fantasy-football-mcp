@@ -159,8 +159,11 @@ def test_shape_matchup_falls_back_to_total_points_and_null_projection(matchup_js
     game["home"]["totalPoints"] = 101.234
     out = shapes.shape_matchup(game, matchup_json, my_team_id=12)
     assert out["my_team"]["score"] == 101.23
-    assert out["my_team"]["projected"] is None
+    assert out["my_team"]["projected"] == 17.77  # falls back to the sum of starters' projections
     assert out["my_team"]["win_probability"] is None
+    for entry in game["home"]["rosterForCurrentScoringPeriod"]["entries"]:
+        entry["playerPoolEntry"]["player"].pop("stats", None)
+    assert shapes.shape_matchup(game, matchup_json, my_team_id=12)["my_team"]["projected"] is None
 
 
 def test_shape_matchup_unknown_opponent_and_missing_roster(matchup_json):
