@@ -43,9 +43,6 @@
       "id": 12,
       "name": "My Matchup Team",
       "abbrev": "MMT",
-      "owners": [
-        "{ABC-123}"
-      ],
       "roster": {
         "entries": [
           {

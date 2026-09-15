@@ -383,7 +383,7 @@ def get_projections(week: int | None = None) -> dict[str, Any]:
         raise ToolError(f"week must be between 1 and {MAX_WEEK} (got {week}).")
     try:
         client = _get_client()
-        league = client.get("mRoster", "mSettings")
+        league = client.get("mTeam", "mRoster", "mSettings")
         team_id = client.find_my_team_id(league)
         entries = (team_by_id(league, team_id).get("roster") or {}).get("entries") or []
         counts = {

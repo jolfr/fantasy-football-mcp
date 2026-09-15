@@ -286,7 +286,16 @@ def cached_schedules(pro_schedules_json):
 async def test_get_projections_tool(client, cached_schedules, roster_settings_json, projections_json):
     def respond(request):
         views = request.url.params.get_list("view")
-        return httpx.Response(200, json=projections_json if "kona_player_info" in views else roster_settings_json)
+        if "kona_player_info" in views:
+            return httpx.Response(200, json=projections_json)
+        # Real ESPN only includes "owners" on teams when mTeam is requested.
+        league = roster_settings_json
+        if "mTeam" in views:
+            league = {
+                **league,
+                "teams": [{**t, "owners": ["{ABC-123}"]} for t in league["teams"]],
+            }
+        return httpx.Response(200, json=league)
 
     route = respx.get(LEAGUE_URL).mock(side_effect=respond)
     async with Client(server.mcp) as c:
@@ -294,7 +303,7 @@ async def test_get_projections_tool(client, cached_schedules, roster_settings_js
     assert result.data["week"] == 2
     assert result.data["changes"]["start"][0]["name"] == "WR Bench"
     calls = [r.request for r in route.calls]
-    assert calls[0].url.params.get_list("view") == ["mRoster", "mSettings"]
+    assert calls[0].url.params.get_list("view") == ["mTeam", "mRoster", "mSettings"]
     assert calls[1].url.params.get_list("view") == ["kona_player_info"]
     assert calls[1].url.params["scoringPeriodId"] == "2"
     sent = json.loads(calls[1].headers["x-fantasy-filter"])["players"]["filterIds"]["value"]
@@ -305,7 +314,16 @@ async def test_get_projections_tool(client, cached_schedules, roster_settings_js
 async def test_get_projections_defaults_to_current_week(client, cached_schedules, roster_settings_json, projections_json):
     def respond(request):
         views = request.url.params.get_list("view")
-        return httpx.Response(200, json=projections_json if "kona_player_info" in views else roster_settings_json)
+        if "kona_player_info" in views:
+            return httpx.Response(200, json=projections_json)
+        # Real ESPN only includes "owners" on teams when mTeam is requested.
+        league = roster_settings_json
+        if "mTeam" in views:
+            league = {
+                **league,
+                "teams": [{**t, "owners": ["{ABC-123}"]} for t in league["teams"]],
+            }
+        return httpx.Response(200, json=league)
 
     route = respx.get(LEAGUE_URL).mock(side_effect=respond)
     async with Client(server.mcp) as c:
@@ -410,7 +428,16 @@ async def test_compare_players_all_unresolved_is_tool_error(client, cached_index
 async def test_get_projections_fetches_and_caches_schedules(client, roster_settings_json, projections_json, pro_schedules_json):
     def respond(request):
         views = request.url.params.get_list("view")
-        return httpx.Response(200, json=projections_json if "kona_player_info" in views else roster_settings_json)
+        if "kona_player_info" in views:
+            return httpx.Response(200, json=projections_json)
+        # Real ESPN only includes "owners" on teams when mTeam is requested.
+        league = roster_settings_json
+        if "mTeam" in views:
+            league = {
+                **league,
+                "teams": [{**t, "owners": ["{ABC-123}"]} for t in league["teams"]],
+            }
+        return httpx.Response(200, json=league)
 
     respx.get(LEAGUE_URL).mock(side_effect=respond)
     sched = respx.get(SEASON_URL).mock(return_value=httpx.Response(200, json=pro_schedules_json))
