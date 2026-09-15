@@ -111,6 +111,13 @@ def test_find_my_team_id_no_match_raises(settings, league_json):
     assert "s2-cookie" not in str(exc.value)
 
 
+def test_find_my_team_id_explains_missing_owner_data(settings):
+    client = EspnClient(settings)
+    league = {"teams": [{"id": 1, "name": "A"}, {"id": 2, "name": "B"}]}  # no owners: e.g. mRoster-only payload
+    with pytest.raises(EspnError, match="no team owner data"):
+        client.find_my_team_id(league)
+
+
 @respx.mock
 def test_get_players_index_request_shape(settings):
     route = respx.get(PLAYERS_URL).mock(

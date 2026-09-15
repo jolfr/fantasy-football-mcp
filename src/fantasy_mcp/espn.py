@@ -108,6 +108,12 @@ class EspnClient:
             if swid in owners:
                 return int(team["id"])
 
+        if not any(t.get("owners") for t in league.get("teams", [])):
+            raise EspnError(
+                "ESPN response has no team owner data (the mTeam view was not requested), "
+                "so the user's team can't be identified from ESPN_SWID."
+            )
+
         raise EspnError(
             f"No team in league {self.settings.league_id} is owned by the configured "
             "ESPN_SWID. Check ESPN_SWID or set ESPN_TEAM_ID explicitly."
