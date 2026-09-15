@@ -2,23 +2,14 @@
 
 from __future__ import annotations
 
-import datetime as dt
 from typing import Any
+
+from fantasy_mcp.shapes import _iso_utc
 
 
 def _teams(schedules: dict[str, Any]) -> dict[int, dict[str, Any]]:
     teams = (schedules.get("settings") or {}).get("proTeams") or []
     return {t["id"]: t for t in teams if isinstance(t, dict) and "id" in t}
-
-
-def _iso(epoch_ms: Any) -> str | None:
-    if not epoch_ms:
-        return None
-    return (
-        dt.datetime.fromtimestamp(int(epoch_ms) / 1000, dt.timezone.utc)
-        .isoformat()
-        .replace("+00:00", "Z")
-    )
 
 
 def game_context(schedules: dict[str, Any], pro_team_id: int | None, week: int) -> dict[str, Any]:
@@ -35,4 +26,4 @@ def game_context(schedules: dict[str, Any], pro_team_id: int | None, week: int) 
     other_id = game.get("awayProTeamId") if home else game.get("homeProTeamId")
     other = (teams.get(other_id) or {}).get("abbrev") or "?"
     prefix = "vs " if home else "@"
-    return {"opponent": f"{prefix}{other.upper()}", "kickoff": _iso(game.get("date"))}
+    return {"opponent": f"{prefix}{other.upper()}", "kickoff": _iso_utc(game.get("date"))}

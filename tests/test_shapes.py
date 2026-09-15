@@ -634,3 +634,17 @@ def test_shape_team_with_league_adds_owner_and_projection(league_json):
     assert next(p for p in out["roster"] if p["name"] == "Bench Guy")["projected"] is None
     plain = shapes.shape_team(team)
     assert "owner" not in plain and "projected" not in plain["roster"][0]
+
+
+# --- _iso_utc -----------------------------------------------------------------
+
+
+def test_iso_utc_seconds_precision():
+    # 1789470515522 ms has a fractional second (.522); the helper truncates it.
+    assert shapes._iso_utc(1789470515522) == "2026-09-15T11:08:35Z"
+    assert shapes._iso_utc(1789542000000) == "2026-09-16T07:00:00Z"
+
+
+def test_iso_utc_none_or_zero_is_none():
+    assert shapes._iso_utc(None) is None
+    assert shapes._iso_utc(0) is None
