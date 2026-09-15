@@ -1,6 +1,6 @@
 [project]
 name = "fantasy-mcp"
-version = "0.3.0"
+version = "0.3.1"
 description = "MCP server exposing ESPN fantasy football team data"
 readme = "README.md"
 requires-python = ">=3.12"
