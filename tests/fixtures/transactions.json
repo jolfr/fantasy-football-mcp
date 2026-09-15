@@ -1,0 +1,139 @@
+{
+  "seasonId": 2026,
+  "scoringPeriodId": 2,
+  "status": {
+    "currentMatchupPeriod": 1
+  },
+  "teams": [
+    {
+      "id": 12,
+      "name": "My Matchup Team",
+      "abbrev": "MMT",
+      "owners": [
+        "{ABC-123}"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Rival Team",
+      "abbrev": "RIV",
+      "owners": [
+        "{DEF-456}"
+      ]
+    }
+  ],
+  "transactions": [
+    {
+      "id": "t-lineup",
+      "type": "ROSTER",
+      "status": "EXECUTED",
+      "teamId": 5,
+      "scoringPeriodId": 2,
+      "bidAmount": 0,
+      "proposedDate": 1789468508539,
+      "processDate": null,
+      "items": [
+        {
+          "type": "LINEUP",
+          "playerId": 101,
+          "fromTeamId": 0,
+          "toTeamId": 0,
+          "fromLineupSlotId": 2,
+          "toLineupSlotId": 23
+        },
+        {
+          "type": "LINEUP",
+          "playerId": 102,
+          "fromTeamId": 0,
+          "toTeamId": 0,
+          "fromLineupSlotId": 23,
+          "toLineupSlotId": 2
+        }
+      ]
+    },
+    {
+      "id": "t-waiver",
+      "type": "WAIVER",
+      "status": "PENDING",
+      "teamId": 12,
+      "scoringPeriodId": 2,
+      "bidAmount": 7,
+      "proposedDate": 1789470515522,
+      "processDate": 1789542000000,
+      "items": [
+        {
+          "type": "ADD",
+          "playerId": 4696044,
+          "fromTeamId": 0,
+          "toTeamId": 12,
+          "fromLineupSlotId": -1,
+          "toLineupSlotId": -1
+        },
+        {
+          "type": "DROP",
+          "playerId": 103,
+          "fromTeamId": 12,
+          "toTeamId": 0,
+          "fromLineupSlotId": -1,
+          "toLineupSlotId": -1
+        }
+      ]
+    },
+    {
+      "id": "t-fa",
+      "type": "FREEAGENT",
+      "status": "EXECUTED",
+      "teamId": 5,
+      "scoringPeriodId": 1,
+      "bidAmount": 0,
+      "proposedDate": 1789300000000,
+      "processDate": 1789300000000,
+      "items": [
+        {
+          "type": "ADD",
+          "playerId": 4572680,
+          "fromTeamId": 0,
+          "toTeamId": 5,
+          "fromLineupSlotId": -1,
+          "toLineupSlotId": -1
+        },
+        {
+          "type": "DROP",
+          "playerId": 4362628,
+          "fromTeamId": 5,
+          "toTeamId": 0,
+          "fromLineupSlotId": -1,
+          "toLineupSlotId": -1
+        }
+      ]
+    },
+    {
+      "id": "t-trade",
+      "type": "TRADE_ACCEPT",
+      "status": "EXECUTED",
+      "teamId": 12,
+      "scoringPeriodId": 1,
+      "bidAmount": 0,
+      "proposedDate": 1789200000000,
+      "processDate": 1789250000000,
+      "items": [
+        {
+          "type": "TRADE",
+          "playerId": 4242335,
+          "fromTeamId": 12,
+          "toTeamId": 5,
+          "fromLineupSlotId": -1,
+          "toLineupSlotId": -1
+        },
+        {
+          "type": "TRADE",
+          "playerId": 1001,
+          "fromTeamId": 5,
+          "toTeamId": 12,
+          "fromLineupSlotId": -1,
+          "toLineupSlotId": -1
+        }
+      ]
+    }
+  ]
+}
