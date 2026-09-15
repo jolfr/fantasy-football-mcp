@@ -753,3 +753,162 @@ def shape_comparison(
             }
         )
     return rows
+
+
+TRANSACTION_TYPE_LABELS = {
+    "WAIVER": "Waiver claim",
+    "FREEAGENT": "Free agent move",
+    "DRAFT": "Draft pick",
+}
+
+# ESPN's own `status` on a trade transaction is "EXECUTED" for every TRADE_* type
+# except the one that actually completed it (TRADE_ACCEPT, where "EXECUTED" is
+# already the right word) -- so the real outcome has to come from the type suffix.
+TRADE_STATUS_BY_TYPE = {
+    "TRADE_DECLINE": "DECLINED",
+    "TRADE_VETO": "VETOED",
+    "TRADE_PROPOSAL": "PROPOSED",
+}
+
+
+def _normalize_transaction_type_status(
+    espn_type: str | None, raw_status: str | None, items: list[dict[str, Any]]
+) -> tuple[str | None, str | None]:
+    if espn_type and espn_type.startswith("TRADE_"):
+        return "TRADE", TRADE_STATUS_BY_TYPE.get(espn_type, raw_status)
+    if espn_type == "ROSTER":
+        only_lineup = bool(items) and all(i.get("type") == "LINEUP" for i in items)
+        return ("LINEUP" if only_lineup else "FREEAGENT"), raw_status
+    return espn_type, raw_status
+
+
+def _transaction_team_name(league: dict[str, Any], team_id: Any) -> str | None:
+    if not team_id:
+        return None
+    team = _find_team(league, team_id)
+    return team.get("name") if team else None
+
+
+def _transaction_slot_name(slot_id: Any) -> str | None:
+    if slot_id is None or slot_id == -1:
+        return None
+    return ids.name(ids.LINEUP_SLOTS, slot_id)
+
+
+def _shape_transaction_item(
+    item: dict[str, Any], league: dict[str, Any], index_by_id: dict[Any, dict[str, Any]]
+) -> dict[str, Any]:
+    player_id = item.get("playerId")
+    player = index_by_id.get(player_id) if player_id is not None else None
+    if player is not None:
+        name = player.get("fullName")
+        position = ids.name(ids.POSITIONS, player.get("defaultPositionId", -1))
+        pro_team = ids.name(ids.PRO_TEAMS, player.get("proTeamId", -1))
+    else:
+        name, position, pro_team = None, "UNKNOWN_-1", "UNKNOWN_-1"
+    return {
+        "action": item.get("type"),
+        "player_id": player_id,
+        "name": name,
+        "position": position,
+        "pro_team": pro_team,
+        "from_team": _transaction_team_name(league, item.get("fromTeamId")),
+        "to_team": _transaction_team_name(league, item.get("toTeamId")),
+        "from_slot": _transaction_slot_name(item.get("fromLineupSlotId")),
+        "to_slot": _transaction_slot_name(item.get("toLineupSlotId")),
+    }
+
+
+def _item_display_name(item: dict[str, Any]) -> str:
+    """Item's player name, falling back to ``player <id>`` when unresolved (unknown id)."""
+    return item["name"] or f"player {item['player_id']}"
+
+
+def _trade_summary(status: str | None, items: list[dict[str, Any]]) -> str:
+    sides: dict[str, list[str]] = {}
+    order: list[str] = []
+    for item in items:
+        sender = item["from_team"] or "Unknown"
+        if sender not in sides:
+            sides[sender] = []
+            order.append(sender)
+        sides[sender].append(_item_display_name(item))
+    body = "; ".join(f"{team} sends {', '.join(sides[team])}" for team in order)
+    status_word = (status or "").lower()
+    return f"Trade {status_word}: {body}" if body else f"Trade {status_word}"
+
+
+def _lineup_summary(items: list[dict[str, Any]]) -> str:
+    moves = ", ".join(f"{_item_display_name(i)} to {i['to_slot']}" for i in items)
+    return f"Lineup change: {moves}" if moves else "Lineup change"
+
+
+def _transaction_summary(
+    norm_type: str | None, status: str | None, bid: int, items: list[dict[str, Any]]
+) -> str:
+    if norm_type == "LINEUP":
+        return _lineup_summary(items)
+    if norm_type == "TRADE":
+        return _trade_summary(status, items)
+    label = TRANSACTION_TYPE_LABELS.get(norm_type, norm_type.title() if norm_type else "Transaction")
+    status_word = (status or "").lower()
+    bid_part = f" (${bid})" if bid else ""
+    moves = [f"add {_item_display_name(i)}" for i in items if i["action"] == "ADD"]
+    moves += [f"drop {_item_display_name(i)}" for i in items if i["action"] == "DROP"]
+    body = f": {', '.join(moves)}" if moves else ""
+    return f"{label} {status_word}{bid_part}{body}".strip()
+
+
+def _shape_transaction(
+    t: dict[str, Any], league: dict[str, Any], index_by_id: dict[Any, dict[str, Any]]
+) -> dict[str, Any]:
+    espn_type = t.get("type")
+    raw_items = t.get("items") or []
+    norm_type, status = _normalize_transaction_type_status(espn_type, t.get("status"), raw_items)
+    items = [_shape_transaction_item(i, league, index_by_id) for i in raw_items]
+    bid = t.get("bidAmount") or 0
+    return {
+        "id": t.get("id"),
+        "type": norm_type,
+        "espn_type": espn_type,
+        "status": status,
+        "week": t.get("scoringPeriodId"),
+        "team": {"team_id": t.get("teamId"), "name": _transaction_team_name(league, t.get("teamId"))},
+        "proposed": _iso_utc(t.get("proposedDate")),
+        "processed": _iso_utc(t.get("processDate")),
+        "bid": bid,
+        "items": items,
+        "summary": _transaction_summary(norm_type, status, bid, items),
+    }
+
+
+def _transaction_matches_team(t: dict[str, Any], team_id: int) -> bool:
+    if t.get("teamId") == team_id:
+        return True
+    return any(i.get("fromTeamId") == team_id or i.get("toTeamId") == team_id for i in t.get("items") or [])
+
+
+def _is_lineup_only(t: dict[str, Any]) -> bool:
+    items = t.get("items") or []
+    return bool(items) and all(i.get("type") == "LINEUP" for i in items)
+
+
+def shape_transactions(
+    league: dict[str, Any],
+    index_by_id: dict[Any, dict[str, Any]],
+    *,
+    team_id: int | None = None,
+    limit: int = 25,
+    include_lineup_moves: bool = False,
+) -> dict[str, Any]:
+    """Shape ``mTransactions2`` (+ ``mTeam``) into the transaction log, newest first."""
+    transactions = league.get("transactions") or []
+    if team_id is not None:
+        transactions = [t for t in transactions if _transaction_matches_team(t, team_id)]
+    if not include_lineup_moves:
+        transactions = [t for t in transactions if not _is_lineup_only(t)]
+    transactions = sorted(transactions, key=lambda t: t.get("proposedDate") or 0, reverse=True)[:limit]
+    return {
+        "week": league.get("scoringPeriodId"),
+        "transactions": [_shape_transaction(t, league, index_by_id) for t in transactions],
+    }

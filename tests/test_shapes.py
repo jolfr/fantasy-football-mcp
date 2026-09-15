@@ -648,3 +648,126 @@ def test_iso_utc_seconds_precision():
 def test_iso_utc_none_or_zero_is_none():
     assert shapes._iso_utc(None) is None
     assert shapes._iso_utc(0) is None
+
+
+# --- shape_transactions ---------------------------------------------------------
+
+
+def test_shape_transactions_empty_input():
+    assert shapes.shape_transactions({}, {}) == {"week": None, "transactions": []}
+
+
+def test_shape_transactions_default_hides_lineup_moves_and_sorts_newest_first(
+    transactions_json, players_index
+):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id)
+    assert out["week"] == 2
+    assert [t["id"] for t in out["transactions"]] == ["t-waiver", "t-fa", "t-trade"]
+
+
+def test_shape_transactions_waiver_row_shape_and_summary(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id)
+    row = out["transactions"][0]
+    assert row["id"] == "t-waiver"
+    assert row["type"] == "WAIVER"
+    assert row["status"] == "PENDING"
+    assert row["week"] == 2
+    assert row["team"] == {"team_id": 12, "name": "My Matchup Team"}
+    assert row["proposed"] == "2026-09-15T11:08:35Z"
+    assert row["processed"] == "2026-09-16T07:00:00Z"
+    assert row["bid"] == 7
+    assert row["items"] == [
+        {
+            "action": "ADD",
+            "player_id": 4696044,
+            "name": None,
+            "position": "UNKNOWN_-1",
+            "pro_team": "UNKNOWN_-1",
+            "from_team": None,
+            "to_team": "My Matchup Team",
+            "from_slot": None,
+            "to_slot": None,
+        },
+        {
+            "action": "DROP",
+            "player_id": 103,
+            "name": None,
+            "position": "UNKNOWN_-1",
+            "pro_team": "UNKNOWN_-1",
+            "from_team": "My Matchup Team",
+            "to_team": None,
+            "from_slot": None,
+            "to_slot": None,
+        },
+    ]
+    assert row["summary"] == "Waiver claim pending ($7): add player 4696044, drop player 103"
+
+
+def test_shape_transactions_trade_summary(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id)
+    trade = out["transactions"][-1]
+    assert trade["id"] == "t-trade"
+    assert trade["type"] == "TRADE"
+    assert trade["status"] == "EXECUTED"
+    assert trade["espn_type"] == "TRADE_ACCEPT"
+    assert trade["items"][0]["name"] == "Jonathan Taylor"
+    assert trade["items"][1]["name"] == "A.J. Brown"
+    assert (
+        trade["summary"]
+        == "Trade executed: My Matchup Team sends Jonathan Taylor; Rival Team sends A.J. Brown"
+    )
+
+
+def test_shape_transactions_include_lineup_moves(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id, include_lineup_moves=True)
+    assert [t["id"] for t in out["transactions"]] == ["t-waiver", "t-lineup", "t-fa", "t-trade"]
+
+
+def test_shape_transactions_lineup_summary(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id, include_lineup_moves=True)
+    lineup = next(t for t in out["transactions"] if t["id"] == "t-lineup")
+    assert lineup["type"] == "LINEUP"
+    assert lineup["espn_type"] == "ROSTER"
+    assert lineup["summary"] == "Lineup change: player 101 to FLEX, player 102 to RB"
+
+
+def test_shape_transactions_team_id_filter_includes_trade_counterparty(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(
+        transactions_json, index_by_id, team_id=5, include_lineup_moves=True
+    )
+    assert [t["id"] for t in out["transactions"]] == ["t-lineup", "t-fa", "t-trade"]
+
+
+def test_shape_transactions_team_id_filter_hides_lineup_by_default(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id, team_id=5)
+    assert [t["id"] for t in out["transactions"]] == ["t-fa", "t-trade"]
+
+
+def test_shape_transactions_limit(transactions_json, players_index):
+    index_by_id = {p["id"]: p for p in players_index}
+    out = shapes.shape_transactions(transactions_json, index_by_id, limit=1)
+    assert [t["id"] for t in out["transactions"]] == ["t-waiver"]
+
+
+def test_shape_transactions_sparse_transaction_tolerated():
+    league = {"transactions": [{"id": "t-sparse"}]}
+    out = shapes.shape_transactions(league, {})
+    assert out["week"] is None
+    row = out["transactions"][0]
+    assert row["id"] == "t-sparse"
+    assert row["type"] is None
+    assert row["status"] is None
+    assert row["week"] is None
+    assert row["team"] == {"team_id": None, "name": None}
+    assert row["proposed"] is None
+    assert row["processed"] is None
+    assert row["bid"] == 0
+    assert row["items"] == []
+    assert row["summary"] == "Transaction"

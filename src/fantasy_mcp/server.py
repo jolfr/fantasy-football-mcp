@@ -34,6 +34,7 @@ from fantasy_mcp.shapes import (
     shape_projections,
     shape_standings,
     shape_team,
+    shape_transactions,
     shape_whoami,
     team_by_id,
 )
@@ -49,17 +50,17 @@ Use get_matchup for anything about this week's game (or a past result / next
 week's preview via its week argument): score, projection, win probability,
 opponent, or per-player points. Use get_free_agents for pickup,
 waiver, or "who's available" questions, and compare candidates against the
-roster from get_my_team before recommending a move. Use get_player for
-questions about a specific player (history, outlook, who owns them); pass
+roster from get_my_team before recommending a move. Use get_transactions for
+adds, drops, trades, and waiver claims (pending ones included). Use get_player
+for questions about a specific player (history, outlook, who owns them); pass
 player_id from another tool's output when you have it. For "X or Y?" questions
 call compare_players with all the names at once rather than get_player
 repeatedly. Use get_standings for records, rankings, the playoff picture, or
 waiver order. Use get_team for another manager's roster (trade targets,
 positional depth); get_standings lists team ids. Only whoami,
 get_league_settings, get_standings, get_my_team, get_team, get_matchup,
-get_projections, get_free_agents, get_player, compare_players, setup, and
-save_settings exist.
-There is no transaction data yet -- say so instead of inventing it.
+get_projections, get_free_agents, get_transactions, get_player,
+compare_players, setup, and save_settings exist.
 
 For start/sit or "set my lineup", call get_projections (pass next week's
 number once this week's games have started) and present its changes; it
@@ -456,6 +457,54 @@ def get_free_agents(
             "players": players,
         }
     except (FilterError, EspnError, ConfigError) as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool
+def get_transactions(
+    team: str | int | None = None,
+    limit: int = 25,
+    include_lineup_moves: bool = False,
+) -> dict[str, Any]:
+    """League transaction log: adds, drops, waiver claims (including pending), and trades.
+
+    Use this for "who dropped X", "did my waiver claim go through", recent
+    trades, or waiver activity. Newest first. A pending waiver claim has
+    status PENDING; its processed field is when ESPN will run it (already
+    executed claims/trades have processed set to when they ran). Lineup
+    moves (bench/slot changes, not adds or drops) are hidden unless
+    include_lineup_moves is true -- they rarely matter for these questions.
+
+    Args: team -- id or name/abbreviation (case-insensitive, partial name ok)
+    to filter to one team's transactions, including trades where that team is
+    the other side; omit for the whole league. limit -- 1 to 100, default 25.
+
+    Each row: id, type (WAIVER, FREEAGENT, TRADE, LINEUP, or DRAFT), status
+    (e.g. PENDING, EXECUTED, DECLINED, VETOED), espn_type (ESPN's raw type,
+    e.g. TRADE_ACCEPT), week, team (who initiated it), proposed/processed
+    (UTC timestamps), bid (FAAB dollars, 0 if none), items (action ADD/DROP/
+    LINEUP/TRADE/DRAFT, player_id, name -- null if not in the player index --
+    position, pro_team, from_team/to_team, from_slot/to_slot), and a one-line
+    summary.
+    """
+    if not 1 <= limit <= 100:
+        raise ToolError(f"limit must be between 1 and 100 (got {limit}).")
+    try:
+        client = _get_client()
+        league = client.get("mTransactions2", "mTeam")
+        team_id = None
+        if team is not None:
+            found = team_by_id(league, int(str(team).strip())) if is_id_like(team) else find_team_by_name(
+                league, str(team)
+            )
+            team_id = found["id"]
+        index_by_id: dict[int, Any] = {}
+        if any(t.get("items") for t in league.get("transactions") or []):
+            index_by_id = {p["id"]: p for p in _get_players_index(client)}
+        return shape_transactions(
+            league, index_by_id, team_id=team_id, limit=limit, include_lineup_moves=include_lineup_moves
+        )
+    except (EspnError, ConfigError) as e:
         raise ToolError(str(e)) from e
 
 

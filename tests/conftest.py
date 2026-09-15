@@ -83,6 +83,11 @@ def compare_json() -> dict:
     return json.loads((FIXTURES / "compare.json").read_text())
 
 
+@pytest.fixture
+def transactions_json() -> dict:
+    return json.loads((FIXTURES / "transactions.json").read_text())
+
+
 @pytest.fixture(autouse=True)
 def isolated_config_path(tmp_path, monkeypatch):
     """Every test gets its own settings file; never read or write the developer's real one."""

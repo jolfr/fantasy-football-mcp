@@ -486,12 +486,17 @@ async def test_get_my_team_rows_now_include_projected(client, league_json):
     assert next(p for p in result.data["roster"] if p["name"] == "Josh Allen")["projected"] == 22.4
 
 
-async def test_twelve_tools_registered(client):
+async def test_thirteen_tools_registered(client):
     async with Client(server.mcp) as c:
         names = sorted(t.name for t in await c.list_tools())
     assert names == ["compare_players", "get_free_agents", "get_league_settings", "get_matchup",
                      "get_my_team", "get_player", "get_projections", "get_standings", "get_team",
-                     "save_settings", "setup", "whoami"]
+                     "get_transactions", "save_settings", "setup", "whoami"]
+
+
+def test_instructions_mention_get_transactions():
+    assert "get_transactions" in INSTRUCTIONS
+    assert "no transaction data" not in INSTRUCTIONS
 
 
 async def test_setup_tool_returns_card_without_cookies(isolated_config_path, monkeypatch):
@@ -582,3 +587,71 @@ async def test_save_settings_accepts_numeric_league_id(league_json, isolated_con
         result = await c.call_tool("save_settings", {"espn_s2": "s2", "swid": "{ABC-123}", "league_id": 4242})
     assert result.data["ok"] is True
     assert json.loads(isolated_config_path.read_text())["ESPN_LEAGUE_ID"] == "4242"
+
+
+@respx.mock
+async def test_get_transactions_tool(client, transactions_json, cached_index):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=transactions_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_transactions", {})
+    assert result.data["week"] == 2
+    assert [t["id"] for t in result.data["transactions"]] == ["t-waiver", "t-fa", "t-trade"]
+    assert route.calls.last.request.url.params.get_list("view") == ["mTransactions2", "mTeam"]
+
+
+@respx.mock
+async def test_get_transactions_team_by_name_and_include_lineup_moves(client, transactions_json, cached_index):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=transactions_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool(
+            "get_transactions", {"team": "Rival Team", "include_lineup_moves": True}
+        )
+    assert [t["id"] for t in result.data["transactions"]] == ["t-lineup", "t-fa", "t-trade"]
+
+
+@respx.mock
+async def test_get_transactions_team_by_id(client, transactions_json, cached_index):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=transactions_json))
+    async with Client(server.mcp) as c:
+        result = await c.call_tool("get_transactions", {"team": 12})
+    assert [t["id"] for t in result.data["transactions"]] == ["t-waiver", "t-trade"]
+
+
+@respx.mock
+async def test_get_transactions_invalid_limit_is_tool_error(client):
+    route = respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json={}))
+    async with Client(server.mcp) as c:
+        with pytest.raises(ToolError, match="limit must be between 1 and 100"):
+            await c.call_tool("get_transactions", {"limit": 0})
+        with pytest.raises(ToolError, match="limit must be between 1 and 100"):
+            await c.call_tool("get_transactions", {"limit": 101})
+    assert not route.called
+
+
+@respx.mock
+async def test_get_transactions_fetches_index_once(client, transactions_json, players_index):
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=transactions_json))
+    index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=players_index))
+    server.set_players_index_for_tests(None)
+    try:
+        async with Client(server.mcp) as c:
+            await c.call_tool("get_transactions", {})
+            await c.call_tool("get_transactions", {})
+    finally:
+        server.set_players_index_for_tests(None)
+    assert index_route.call_count == 1
+
+
+@respx.mock
+async def test_get_transactions_skips_index_fetch_when_no_items(client):
+    league = {"scoringPeriodId": 1, "teams": [], "transactions": []}
+    respx.get(LEAGUE_URL).mock(return_value=httpx.Response(200, json=league))
+    index_route = respx.get(PLAYERS_URL).mock(return_value=httpx.Response(200, json=[]))
+    server.set_players_index_for_tests(None)
+    try:
+        async with Client(server.mcp) as c:
+            result = await c.call_tool("get_transactions", {})
+    finally:
+        server.set_players_index_for_tests(None)
+    assert result.data == {"week": 1, "transactions": []}
+    assert not index_route.called
