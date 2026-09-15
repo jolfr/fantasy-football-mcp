@@ -24,10 +24,10 @@ def test_save_drops_unknown_and_empty_values(isolated_config_path):
     assert settings_store.load() == {"ESPN_S2": "abc"}
 
 
-def test_save_overwrites_previous_file(isolated_config_path):
-    settings_store.save({"ESPN_S2": "old", "ESPN_LEAGUE_ID": "1"})
+def test_save_merges_over_previous_values(isolated_config_path):
+    settings_store.save({"ESPN_S2": "old", "ESPN_SEASON": "2025"})
     settings_store.save({"ESPN_S2": "new"})
-    assert settings_store.load() == {"ESPN_S2": "new"}
+    assert settings_store.load() == {"ESPN_S2": "new", "ESPN_SEASON": "2025"}
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")

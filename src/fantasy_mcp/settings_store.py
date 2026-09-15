@@ -40,10 +40,10 @@ def load() -> dict[str, str]:
 
 
 def save(values: dict[str, str | None]) -> Path:
-    """Write the known, non-empty values (replacing the file) with owner-only permissions."""
+    """Merge the known, non-empty values into the saved file (owner-only permissions)."""
     path = config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    kept = {k: str(v) for k, v in values.items() if k in KEYS and v}
+    kept = {**load(), **{k: str(v) for k, v in values.items() if k in KEYS and v}}
     payload = json.dumps(kept, indent=2)  # serialize first so a bad value can't truncate a good file
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.chmod(path, 0o600)  # tighten a pre-existing looser file before any secret is written
