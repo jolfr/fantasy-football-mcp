@@ -143,3 +143,9 @@ README:
 - `tests/test_manifest.py`: the three fields are `required: False`.
 - Manual acceptance: reinstall bundle with an empty form → "set up my
   fantasy league" → fill card → "Connected" → `get_matchup` works.
+- **Result (2026-09-15, macOS Claude Desktop):** installed with an empty
+  settings form; "what's my matchup" → Claude called `setup`; the card
+  rendered with instructions and three inputs; Save & test showed the green
+  "Connected" line using `SetState("result", RESULT)` unchanged; `get_matchup`
+  then returned live data. The README link in the card is shown but Desktop
+  does not open it from inside the card (copyable; acceptable).
