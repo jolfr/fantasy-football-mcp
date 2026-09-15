@@ -9,19 +9,8 @@ from fantasy_mcp import ids
 from fantasy_mcp.config import Settings
 from fantasy_mcp.espn import EspnError
 from fantasy_mcp.lineup import NON_STARTING_SLOTS, optimal_lineup
+from fantasy_mcp.schedules import game_context, iso_utc
 from fantasy_mcp.stats import scoring_name, shape_stat_line
-
-
-def _iso_utc(epoch_ms: Any) -> str | None:
-    """UTC ISO-8601 timestamp (whole seconds) for an ESPN epoch-ms value, or None."""
-    if not epoch_ms:
-        return None
-    return (
-        dt.datetime.fromtimestamp(int(epoch_ms) / 1000, dt.timezone.utc)
-        .isoformat(timespec="seconds")
-        .replace("+00:00", "Z")
-    )
-
 
 # player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
 # and statSourceId (0 = actual, 1 = projected).
@@ -36,6 +25,8 @@ HEADSHOT_URL = (
     "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{player_id}.png&w=350&h=254"
 )
 TEAM_LOGO_URL = "https://a.espncdn.com/i/teamlogos/nfl/500/{team}.png"
+
+
 
 
 def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
@@ -527,9 +518,6 @@ def shape_projections(
     current_week: int | None = None,
 ) -> dict[str, Any]:
     """Weekly projections for a roster plus a suggested optimal lineup and the changes to reach it."""
-    # Deferred: schedules imports _iso_utc from this module, so importing at module scope would cycle.
-    from fantasy_mcp.schedules import game_context
-
     by_id = {p.get("id"): p.get("player") or {} for p in projections_players or []}
 
     rows: list[dict[str, Any]] = []
@@ -702,7 +690,6 @@ def shape_comparison(
     entries: list[dict[str, Any]], league: dict[str, Any], week: int, schedules: dict[str, Any]
 ) -> list[dict[str, Any]]:
     """Compact side-by-side rows for compare_players; entries with an ``error`` key pass through."""
-    from fantasy_mcp.schedules import game_context
 
     season = league.get("seasonId", -1)
     rows: list[dict[str, Any]] = []
@@ -874,8 +861,8 @@ def _shape_transaction(
         "status": status,
         "week": t.get("scoringPeriodId"),
         "team": {"team_id": t.get("teamId"), "name": _transaction_team_name(league, t.get("teamId"))},
-        "proposed": _iso_utc(t.get("proposedDate")),
-        "processed": _iso_utc(t.get("processDate")),
+        "proposed": iso_utc(t.get("proposedDate")),
+        "processed": iso_utc(t.get("processDate")),
         "bid": bid,
         "items": items,
         "summary": _transaction_summary(norm_type, status, bid, items),

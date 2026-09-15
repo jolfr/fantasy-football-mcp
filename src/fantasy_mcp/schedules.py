@@ -2,9 +2,35 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import Any
 
-from fantasy_mcp.shapes import _iso_utc
+
+def iso_utc(epoch_ms: Any) -> str | None:
+    """UTC ISO-8601 timestamp (whole seconds) for an ESPN epoch-ms value, or None."""
+    if not epoch_ms:
+        return None
+    return (
+        dt.datetime.fromtimestamp(int(epoch_ms) / 1000, dt.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+
+# player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
+# and statSourceId (0 = actual, 1 = projected).
+SEASON_PERIOD = 0
+ACTUAL_SOURCE_ID = 0
+PROJECTION_SOURCE_ID = 1
+
+BENCH_SLOT = 20
+IR_SLOT = 21
+
+HEADSHOT_URL = (
+    "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{player_id}.png&w=350&h=254"
+)
+TEAM_LOGO_URL = "https://a.espncdn.com/i/teamlogos/nfl/500/{team}.png"
+
 
 
 def _teams(schedules: dict[str, Any]) -> dict[int, dict[str, Any]]:
@@ -26,4 +52,4 @@ def game_context(schedules: dict[str, Any], pro_team_id: int | None, week: int) 
     other_id = game.get("awayProTeamId") if home else game.get("homeProTeamId")
     other = (teams.get(other_id) or {}).get("abbrev") or "?"
     prefix = "vs " if home else "@"
-    return {"opponent": f"{prefix}{other.upper()}", "kickoff": _iso_utc(game.get("date"))}
+    return {"opponent": f"{prefix}{other.upper()}", "kickoff": iso_utc(game.get("date"))}
