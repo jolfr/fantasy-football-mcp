@@ -772,3 +772,20 @@ def test_shape_transactions_sparse_transaction_tolerated():
     assert row["bid"] == 0
     assert row["items"] == []
     assert row["summary"] == "Transaction"
+
+
+def test_shape_transactions_trade_decline_and_draft(transactions_json, players_index):
+    transactions_json["transactions"] += [
+        {"id": "t-decl", "type": "TRADE_DECLINE", "status": "EXECUTED", "teamId": 5, "scoringPeriodId": 2,
+         "bidAmount": 0, "proposedDate": 1789480000000, "processDate": None,
+         "items": [{"type": "TRADE", "playerId": 4242335, "fromTeamId": 12, "toTeamId": 5}]},
+        {"id": "t-draft", "type": "DRAFT", "status": "EXECUTED", "teamId": 12, "scoringPeriodId": 0,
+         "bidAmount": 0, "proposedDate": 1789490000000, "processDate": None,
+         "items": [{"type": "DRAFT", "playerId": 1001, "fromTeamId": 0, "toTeamId": 12}]},
+    ]
+    index = {p["id"]: p for p in players_index}
+    rows = {r["id"]: r for r in shapes.shape_transactions(transactions_json, index, limit=50)["transactions"]}
+    assert rows["t-decl"]["type"] == "TRADE" and rows["t-decl"]["status"] == "DECLINED"
+    assert rows["t-decl"]["espn_type"] == "TRADE_DECLINE"
+    assert rows["t-draft"]["type"] == "DRAFT"
+    assert "A.J. Brown" in rows["t-draft"]["summary"]

@@ -27,8 +27,6 @@ HEADSHOT_URL = (
 TEAM_LOGO_URL = "https://a.espncdn.com/i/teamlogos/nfl/500/{team}.png"
 
 
-
-
 def _find_team(league: dict[str, Any], team_id: int | None) -> dict[str, Any] | None:
     for team in league.get("teams", []):
         if team.get("id") == team_id:
@@ -842,6 +840,7 @@ def _transaction_summary(
     bid_part = f" (${bid})" if bid else ""
     moves = [f"add {_item_display_name(i)}" for i in items if i["action"] == "ADD"]
     moves += [f"drop {_item_display_name(i)}" for i in items if i["action"] == "DROP"]
+    moves += [f"draft {_item_display_name(i)}" for i in items if i["action"] == "DRAFT"]
     body = f": {', '.join(moves)}" if moves else ""
     return f"{label} {status_word}{bid_part}{body}".strip()
 

@@ -17,22 +17,6 @@ def iso_utc(epoch_ms: Any) -> str | None:
     )
 
 
-# player.stats[] items are keyed by scoringPeriodId (0 = season total, N = week N)
-# and statSourceId (0 = actual, 1 = projected).
-SEASON_PERIOD = 0
-ACTUAL_SOURCE_ID = 0
-PROJECTION_SOURCE_ID = 1
-
-BENCH_SLOT = 20
-IR_SLOT = 21
-
-HEADSHOT_URL = (
-    "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{player_id}.png&w=350&h=254"
-)
-TEAM_LOGO_URL = "https://a.espncdn.com/i/teamlogos/nfl/500/{team}.png"
-
-
-
 def _teams(schedules: dict[str, Any]) -> dict[int, dict[str, Any]]:
     teams = (schedules.get("settings") or {}).get("proTeams") or []
     return {t["id"]: t for t in teams if isinstance(t, dict) and "id" in t}
